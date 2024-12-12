@@ -1,0 +1,72 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #666666;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+h1 {
+    font-size: 24px;
+    color: #fff;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#search-box {
+    margin: 20px auto;
+    padding: 10px;
+    width: 80%;
+    max-width: 500px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    display: block;
+    background-color: white;
+}
+
+#results,
+#favorites {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.manga-card {
+    background-color: white;
+    padding: 10px;
+    width: 150px;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.manga-card:hover {
+    transform: scale(1.05);
+}
+
+.manga-card img {
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.manga-card h3 {
+    font-size: 14px;
+    margin-top: 10px;
+    color: #333;
+}
+
+h2 {
+    font-size: 20px;
+    color: #fff;
+    text-align: center;
+    margin-top: 30px;
+}

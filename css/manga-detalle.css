@@ -1,0 +1,133 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #666666;
+    background-size: 50vh;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 50vh;
+}
+
+h1 {
+    font-size: 24px;
+    color: #333;
+}
+
+#manga-details {
+    margin-top: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#chapters-list {
+    margin-top: 30px;
+}
+
+.chapter {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0);
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.chapter:hover {
+    background-color: rgb(190, 155, 255, 125);
+}
+
+.chapter a {
+    text-decoration: none;
+    color: #d6d6d6;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.chapter a:hover {
+    text-decoration: underline;
+}
+
+#manga-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.read {
+    color: #ff0000;
+}
+
+.read a {
+    color: #ff0000;
+}
+
+#favorite-checkbox-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
+#favorite-checkbox {
+    display: none;
+}
+
+#favorite-checkbox-label {
+    font-size: 30px;
+    color: black;
+    cursor: pointer;
+}
+
+#favorite-checkbox:checked+#favorite-checkbox-label {
+    color: gold;
+}
+
+#home-button {
+    position: fixed;
+    bottom: 2vh;
+    right: 2vw;
+    background-color: #fff;
+    border: 2px solid #333;
+    border-radius: 50%;
+    width: 3vw;
+    height: 3vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+#home-button img {
+    width: 2vw;
+    height: 2vh;
+}
+
+#home-button:hover {
+    background-color: #f0f0f0;
+}
+
+/* Botón de descarga con icono */
+.download-btn {
+    content: "⬇️"; 
+    background-color: transparent;
+    color: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    width: 2vw;
+    height: 3vh;
+    flex-wrap: wrap;
+}
+
+/* El icono dentro del botón */
+.download-btn::before {
+    content: "⬇️"; 
+    font-size: 18px;
+    color: black;
+} 

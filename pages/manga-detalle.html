@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles del Manga</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="../css/manga-detalle.css">
+    <link rel="icon" href="../img/logo.ico">
+</head>
+
+<body>
+
+    <!-- Logo que redirige a index.html -->
+    <img id="home-button" src="../img/home.png" alt="Logo de la página" onclick="window.location.href = '../index.html';">
+
+    <div id="favorite-checkbox-container">
+        <input type="checkbox" id="favorite-checkbox">
+        <label for="favorite-checkbox" id="favorite-checkbox-label">★</label>
+    </div>
+
+    <h1 id="manga-title">Detalles del Manga</h1>
+    <div id="manga-details"></div>
+    <div id="chapters-list"></div>
+
+    <script src="../js/manga-detalle.js"></script>
+    <script src="../js/worker.js"></script>
+
+</body>
+
+</html>

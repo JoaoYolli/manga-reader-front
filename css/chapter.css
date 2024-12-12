@@ -1,0 +1,107 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #666666;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 24px;
+    color: #fff;
+}
+
+#chapter-details {
+    margin-top: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#chapter-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+#chapter-images img {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+#navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+#navigation-buttons button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    background-color: #0066cc;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#navigation-buttons button:hover {
+    background-color: #005bb5;
+}
+
+.chapter-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#logo {
+    position: fixed;
+    top: 1vh;
+    left: 1vw;
+    width: 5vw;
+    cursor: pointer;
+}
+
+#home-button {
+    position: fixed;
+    bottom: 2vh;
+    right: 2vw;
+    background-color: #fff;
+    border: 2px solid #333;
+    border-radius: 50%;
+    width: 3vw;
+    height: 3vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+#home-button img {
+    width: 2vw;
+    height: 2vh;
+}
+
+#home-button:hover {
+    background-color: #f0f0f0;
+}
