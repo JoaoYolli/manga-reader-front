@@ -112,7 +112,7 @@ function showNavigationButtons() {
     navigationContainer.style.display = "block";
 }
 
-function navigateChapter(direction) {
+async function navigateChapter(direction) {
     const currentChapterIndex = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
     const nextChapterIndex = currentChapterIndex + direction;
 
@@ -120,7 +120,7 @@ function navigateChapter(direction) {
         const nextChapter = mangaData.chapters[nextChapterIndex];
         // Enviar solicitud POST para agregar el capítulo como leído
         if (direction === 1) {
-            markChapterAsRead(currentChapterIndex + 1);
+            await markChapterAsRead(currentChapterIndex + 1);
         }
         // Navegar al siguiente capítulo
         window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${nextChapter.number}`;
