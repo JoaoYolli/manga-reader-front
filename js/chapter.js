@@ -87,6 +87,11 @@ async function getChapterDetails() {
 // --- Selector de capítulos ---
 function populateChapterSelector() {
     const select = document.getElementById('chapter-select');
+
+    // 1. Ordenamos numéricamente los capítulos
+    mangaData.chapters.sort((a, b) => Number(a.number) - Number(b.number));
+
+    // 2. Vaciamos el selector y lo rellenamos en orden
     select.innerHTML = '';
     mangaData.chapters.forEach(ch => {
         const opt = document.createElement('option');
@@ -94,12 +99,20 @@ function populateChapterSelector() {
         opt.textContent = `Capítulo ${ch.number}`;
         select.appendChild(opt);
     });
+
+    // 3. Seleccionamos el capítulo actual
     select.value = currentChapter.number;
+
+    // 4. Manejador para cambiar de capítulo
     select.addEventListener('change', () => {
         const num = select.value;
-        window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${num}`;
+        const title = encodeURIComponent(mangaData.title);
+        const cid   = mangaData.id;
+        window.location.href = 
+          `chapter.html?manga=${title}&cid=${cid}&chapter=${num}`;
     });
 }
+
 
 // --- Botones de navegación ---
 function showNavigationButtons() {
@@ -117,16 +130,34 @@ function showNavigationButtons() {
 
 // --- Navegar entre capítulos y marcar leído ---
 async function navigateChapter(direction) {
-    const idx = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
+    // 1. Normalizar números y, opcionalmente, usar array ordenado
+    const chapters = mangaData.chapters
+      .map(ch => ({ ...ch, number: Number(ch.number) }))
+      .sort((a, b) => a.number - b.number);
+  
+    // 2. Buscar el índice del capítulo actual (comparación numérica)
+    const idx = chapters.findIndex(
+      ch => ch.number === Number(currentChapter.number)
+    );
     const nextIdx = idx + direction;
-    if (nextIdx < 0 || nextIdx >= mangaData.chapters.length) return;
-    const nextCh = mangaData.chapters[nextIdx];
-
-    // Si avanzamos, marcar capítulo actual como leído
-    if (direction === 1) await markChapterAsRead(currentChapter.number || nextCh.number - 1);
-
-    window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${nextCh.number}`;
-}
+  
+    // 3. Limitar navegación dentro de rango
+    if (nextIdx < 0 || nextIdx >= chapters.length) return;
+  
+    const nextCh = chapters[nextIdx];
+  
+    // 4. Si avanzamos, marcar el capítulo actual como leído
+    if (direction === 1) {
+      await markChapterAsRead(Number(currentChapter.number));
+    }
+  
+    // 5. Redirigir al siguiente capítulo
+    window.location.href = 
+      `chapter.html?manga=${encodeURIComponent(mangaData.title)
+      }&cid=${mangaData.id
+      }&chapter=${nextCh.number}`;
+  }
+  
 
 // --- Marcar capítulo como leído en el backend ---
 async function markChapterAsRead(chapterNumber) {
