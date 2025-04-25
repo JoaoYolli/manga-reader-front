@@ -257,7 +257,7 @@ async function searchManga() {
     const data = await res.json();
   
     if (data.results && data.results.length) {
-      searchMangas(data.results, "results");
+      searchMangasNormal(data.results, "results");
     } else {
       document.getElementById("results").innerHTML = '<p>No se encontraron mangas.</p>';
     }
@@ -275,7 +275,7 @@ async function searchManga() {
     }
   }
   
-  // --- Render de tarjetas de manga ---
+  // --- Render de tarjetas de manga con restricion de favoritos ---
   function searchMangas(mangas, containerId, name) {
     const container = document.getElementById(containerId);
     if (containerId !== "favorites") container.innerHTML = '';
@@ -301,6 +301,33 @@ async function searchManga() {
   
       container.appendChild(card);
     }
+    });
+  }
+  // --- Render de tarjetas de manga ---
+  function searchMangasNormal(mangas, containerId, name) {
+    const container = document.getElementById(containerId);
+    if (containerId !== "favorites") container.innerHTML = '';
+  
+    mangas.forEach(manga => {
+      const card = document.createElement('div');
+      card.classList.add('manga-card');
+      card.setAttribute('data-url', 
+        `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
+      );
+      card.addEventListener('click', () => {
+        window.location.href = card.getAttribute('data-url');
+      });
+  
+      const img = document.createElement('img');
+      img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';
+      card.appendChild(img);
+  
+      const title = document.createElement('h3');
+      title.textContent = manga.title;
+      card.appendChild(title);
+  
+      container.appendChild(card);
+    
     });
   }
   
