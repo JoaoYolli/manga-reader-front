@@ -1,133 +1,280 @@
-body {
-    font-family: Arial, sans-serif;
+/* Variables para colores, espaciados y tamaños */
+:root {
+    --color-bg: #f0f2f5;
+    --color-card: #ffffff;
+    --color-text: #333333;
+    --color-primary: #4a90e2;
+    --radius: 0.5rem;
+    --gap: 1rem;
+    --transition: 0.3s ease;
+    --font-base: 1rem;           /* 16px */
+    --card-min-width: 150px;
+    --card-max-width: 220px;
+  }
+  
+  /* Reset básico */
+  * {
+    box-sizing: border-box;
     margin: 0;
-    background-color: #666666;
-    background-size: 50vh;
+    padding: 0;
+  }
+  
+  /* Body con background que cubre sin estirarse */
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--font-base);
+    background-color: #666666;               /* fallback color */
+    /* background-image: url("../img/imagen.jpg"); */
+    background-size: auto;                   /* cubre sin deformar */
     background-repeat: no-repeat;
     background-position: center;
     background-attachment: fixed;
-    min-height: 50vh;
-}
-
-h1 {
-    font-size: 24px;
-    color: #333;
-}
-
-#manga-details {
-    margin-top: 20px;
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-#chapters-list {
-    margin-top: 30px;
-}
-
-.chapter {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0);
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-.chapter:hover {
-    background-color: rgb(190, 155, 255, 125);
-}
-
-.chapter a {
-    text-decoration: none;
-    color: #d6d6d6;
-    font-weight: bold;
-    font-size: 18px;
-}
-
-.chapter a:hover {
-    text-decoration: underline;
-}
-
-#manga-title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 20px;
+    color: var(--color-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Cabeceras */
+  h1, h2 {
     text-align: center;
-}
-
-.read {
+    color: var(--color-primary);
+    margin: var(--gap) 0;
+  }
+  
+  h1 {
+    font-size: calc(var(--font-base) * 1.5);
+  }
+  
+  h2 {
+    font-size: calc(var(--font-base) * 1.25);
+  }
+  
+  /* Contenedor de detalles de manga */
+  #manga-details {
+    width: 90%;
+    max-width: 800px;
+    margin: var(--gap) auto 0;
+    background: rgba(255,255,255,0.8);
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Título del manga */
+  #manga-title {
+    font-size: calc(var(--font-base) * 1.75);
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  /* Lista de capítulos */
+  #chapters-list {
+    display: grid;
+    gap: var(--gap);
+    margin: var(--gap) auto 0;
+    grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), var(--card-max-width)));
+    justify-content: center;
+    justify-items: center;
+    width: 90%;
+    max-width: 1200px;
+  }
+  
+  /* Cada capítulo */
+  .chapter {
+    background: var(--color-card);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    width: 100%;
+    max-width: var(--card-max-width);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: background-color var(--transition), transform var(--transition);
+  }
+  
+  .chapter:hover {
+    background-color: rgba(190, 155, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .chapter a {
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: bold;
+    font-size: calc(var(--font-base) * 1.125);
+  }
+  
+  .chapter a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Estado “Leído” */
+  .read a {
     color: #ff0000;
-}
-
-.read a {
-    color: #ff0000;
-}
-
-#favorite-checkbox-container {
+  }
+  
+  /* Marcador de favorito */
+  #favorite-checkbox-container {
     position: fixed;
-    top: 20px;
-    right: 20px;
-}
-
-#favorite-checkbox {
+    top: var(--gap);
+    right: var(--gap);
+  }
+  
+  #favorite-checkbox {
     display: none;
-}
-
-#favorite-checkbox-label {
-    font-size: 30px;
+  }
+  
+  #favorite-checkbox-label {
+    font-size: calc(var(--font-base) * 2);
     color: black;
     cursor: pointer;
-}
-
-#favorite-checkbox:checked+#favorite-checkbox-label {
+  }
+  
+  #favorite-checkbox:checked + #favorite-checkbox-label {
     color: gold;
-}
-
-#home-button {
+  }
+  
+  /* Botón Home responsive */
+  #home-button {
     position: fixed;
     bottom: 2vh;
     right: 2vw;
-    background-color: #fff;
-    border: 2px solid #333;
+    width: clamp(2.5rem, 6vw, 4rem);
+    height: clamp(2.5rem, 6vw, 4rem);
+    background: var(--color-card);
+    border: 2px solid var(--color-text);
     border-radius: 50%;
-    width: 3vw;
-    height: 3vw;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-#home-button img {
-    width: 2vw;
-    height: 2vh;
-}
-
-#home-button:hover {
+    transition: background-color var(--transition);
+  }
+  
+  #home-button:hover {
     background-color: #f0f0f0;
-}
-
-/* Botón de descarga con icono */
-.download-btn {
-    content: "⬇️"; 
-    background-color: transparent;
-    color: transparent;
+  }
+  
+  #home-button img {
+    width: clamp(1.25rem, 4vw, 2rem);
+    height: auto;
+  }
+  
+  /* Botón de descarga responsive */
+  .download-btn {
+    background: transparent;
     border: none;
     cursor: pointer;
+    position: relative;
+    width: clamp(1.5rem, 5vw, 3rem);
+    height: clamp(1.5rem, 5vw, 3rem);
+  }
+  
+  .download-btn::before {
+    content: "⬇️";
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  /* ================================
+     Marcar leído hasta (separado)
+     ================================ */
+  .mark-up-to {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clear: both;
+    margin: calc(var(--gap) * 2) auto 0;
+    padding: 0.75rem 1rem;
+    max-width: 800px;
+    background: rgba(255,255,255,0.8);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .mark-up-to label {
+    margin-right: 0.5rem;
+    font-size: var(--font-base);
+    font-weight: bold;
+    color: var(--color-text);
+  }
+  
+  .mark-up-to input[type="number"] {
+    width: 3rem;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: var(--radius);
+    font-size: var(--font-base);
+    transition: background-color var(--transition);
+  }
+  
+  .mark-up-to input[type="number"]:focus {
+    background-color: rgba(190, 155, 255, 0.2);
+    outline: none;
+  }
+  
+  .mark-up-to button {
+    padding: clamp(0.4rem, 1.5vw, 0.75rem) clamp(0.8rem, 3vw, 1.25rem);
+    font-size: clamp(0.875rem, 2.5vw, 1.125rem);
+    border: none;
+    border-radius: var(--radius);
+    background-color: rgba(190, 155, 255, 0.8);
+    cursor: pointer;
+    transition: background-color var(--transition);
+  }
+  
+  .mark-up-to button:hover {
+    background-color: rgba(190, 155, 255, 1);
+  }
+  
+  /* Media Queries */
+  @media (min-width: 600px) {
+    h1 { font-size: calc(var(--font-base) * 1.75); }
+    h2 { font-size: calc(var(--font-base) * 1.5); }
+    .chapter a { font-size: calc(var(--font-base) * 1.25); }
+  }
+  
+  @media (min-width: 992px) {
+    #manga-details { flex-direction: row; }
+  }
+  
+  @media (min-width: 1200px) {
+    #chapters-list {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+
+  .custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
-    width: 2vw;
-    height: 3vh;
-    flex-wrap: wrap;
-}
-
-/* El icono dentro del botón */
-.download-btn::before {
-    content: "⬇️"; 
-    font-size: 18px;
-    color: black;
-} 
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .custom-modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .custom-modal-buttons {
+    margin-top: 15px;
+  }
+  
+  .custom-modal-buttons button {
+    margin: 0 10px;
+    padding: 5px 15px;
+  }
+  
+  

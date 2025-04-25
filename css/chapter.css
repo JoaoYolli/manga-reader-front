@@ -1,107 +1,189 @@
-body {
-    font-family: Arial, sans-serif;
+/* ================================
+   Variables y Reset
+   ================================ */
+   :root {
+    --color-bg: #666666;
+    --color-card: #ffffff;
+    --color-text: #333333;
+    --color-primary: #4a90e2;
+    --radius: 0.5rem;
+    --gap: 1rem;
+    --transition: 0.3s ease;
+    --font-base: 1rem; /* 16px */
+    --button-bg: #0066cc;
+    --button-hover-bg: #005bb5;
+    --card-max-width: 800px;
+  }
+  
+  * {
+    box-sizing: border-box;
     margin: 0;
-    background-color: #666666;
-    background-size: cover;
+    padding: 0;
+  }
+  
+  /* ================================
+     Estilo Global
+     ================================ */
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--font-base);
+    background-color: var(--color-bg);
+    background-size: auto;
     background-repeat: no-repeat;
     background-position: center;
     background-attachment: fixed;
+    color: var(--color-text);
     min-height: 100vh;
-}
-
-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--gap);
+  }
+  
+  /* ================================
+     Encabezado
+     ================================ */
+  header {
     text-align: center;
-    margin-bottom: 20px;
-}
-
-h1 {
-    font-size: 24px;
-    color: #fff;
-}
-
-#chapter-details {
-    margin-top: 20px;
+    margin-bottom: var(--gap);
+  }
+  
+  h1 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    color: #ffffff;
+    margin-bottom: var(--gap);
+  }
+  
+  /* ================================
+     Detalles del Capítulo
+     ================================ */
+  #chapter-details {
     background-color: rgba(255, 255, 255, 0.8);
-    padding: 20px;
-    border-radius: 8px;
+    padding: var(--gap);
+    border-radius: var(--radius);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-#chapter-select {
+    max-width: var(--card-max-width);
     width: 100%;
-    padding: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    border-radius: 5px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* ================================
+     Selector de Capítulos
+     ================================ */
+  #chapter-select {
+    width: 100%;
+    padding: 0.625rem;
+    margin-bottom: var(--gap);
+    font-size: var(--font-base);
+    border-radius: var(--radius);
     border: 1px solid #ddd;
-}
-
-#chapter-images img {
+  }
+  
+  /* ================================
+     Imágenes del Capítulo
+     ================================ */
+  #chapter-images {
+    width: 100%;
+  }
+  
+  #chapter-images img {
     width: 100%;
     max-width: 100%;
-    margin-bottom: 10px;
-    border-radius: 8px;
-}
-
-#navigation-buttons {
+    margin-bottom: 0.625rem;
+    border-radius: var(--radius);
+    display: block;
+  }
+  
+  /* ================================
+     Navegación entre Capítulos
+     ================================ */
+  #navigation-buttons {
     display: flex;
     justify-content: space-between;
-    margin-top: 20px;
-}
-
-#navigation-buttons button {
-    padding: 10px 20px;
-    font-size: 16px;
+    width: 100%;
+    margin-top: var(--gap);
+    flex-wrap: wrap;
+    gap: var(--gap);
+  }
+  
+  #navigation-buttons button {
+    flex: 1 1 calc(50% - var(--gap));
+    padding: 0.625rem 1.25rem;
+    font-size: var(--font-base);
     border: none;
-    background-color: #0066cc;
+    background-color: var(--button-bg);
     color: white;
-    border-radius: 5px;
+    border-radius: var(--radius);
     cursor: pointer;
-}
-
-#navigation-buttons button:hover {
-    background-color: #005bb5;
-}
-
-.chapter-title {
-    font-size: 28px;
+    transition: background-color var(--transition);
+  }
+  
+  #navigation-buttons button:hover {
+    background-color: var(--button-hover-bg);
+  }
+  
+  /* ================================
+     Título del Capítulo
+     ================================ */
+  .chapter-title {
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
     font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
+    color: var(--color-text);
+    margin-bottom: var(--gap);
     text-align: center;
-}
-
-#logo {
+  }
+  
+  /* ================================
+     Logo Fijo
+     ================================ */
+  #logo {
     position: fixed;
     top: 1vh;
     left: 1vw;
-    width: 5vw;
+    width: clamp(2rem, 5vw, 3rem);
     cursor: pointer;
-}
-
-#home-button {
+    z-index: 1000;
+  }
+  
+  /* ================================
+     Botón Home Fijo
+     ================================ */
+  #home-button {
     position: fixed;
     bottom: 2vh;
     right: 2vw;
-    background-color: #fff;
-    border: 2px solid #333;
+    background-color: var(--color-card);
+    border: 2px solid var(--color-text);
     border-radius: 50%;
-    width: 3vw;
-    height: 3vw;
+    width: clamp(2.5rem, 6vw, 4rem);
+    height: clamp(2.5rem, 6vw, 4rem);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-#home-button img {
-    width: 2vw;
-    height: 2vh;
-}
-
-#home-button:hover {
+    transition: background-color var(--transition);
+    z-index: 1000;
+  }
+  
+  #home-button img {
+    width: clamp(1.25rem, 4vw, 2rem);
+    height: auto;
+  }
+  
+  #home-button:hover {
     background-color: #f0f0f0;
-}
+  }
+  
+  /* ================================
+     Media Queries
+     ================================ */
+  @media (max-width: 600px) {
+    #navigation-buttons button {
+      flex: 1 1 100%;
+    }
+  }
+  

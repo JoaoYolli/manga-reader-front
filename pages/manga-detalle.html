@@ -10,20 +10,34 @@
     <link rel="icon" href="../img/logo.ico">
 </head>
 
-<body>
+<body>  
 
     <!-- Logo que redirige a index.html -->
     <img id="home-button" src="../img/home.png" alt="Logo de la página" onclick="window.location.href = '../index.html';">
 
+    <!-- Checkbox de favorito -->
     <div id="favorite-checkbox-container">
         <input type="checkbox" id="favorite-checkbox">
         <label for="favorite-checkbox" id="favorite-checkbox-label">★</label>
     </div>
 
+    <!-- Título y detalles del manga -->
     <h1 id="manga-title">Detalles del Manga</h1>
     <div id="manga-details"></div>
-    <div id="chapters-list"></div>
 
+    <!-- Control estático para "Marcar leído hasta" -->
+    <div class="mark-up-to">
+        <label for="mark-up-to-input">Marcar leído hasta:</label>
+        <input type="number" id="mark-up-to-input" min="1" placeholder="1 - N">
+        <button id="mark-up-to-btn">Aceptar</button>
+    </div>
+    <!-- Sección de capítulos -->
+    <div id="chapters-list">
+        <h2>Capítulos</h2>
+        <!-- Aquí se inyectarán dinámicamente los capítulos -->
+    </div>
+
+    <!-- Scripts -->
     <script src="../js/manga-detalle.js"></script>
     <script src="../js/worker.js"></script>
 

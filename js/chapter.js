@@ -1,35 +1,51 @@
+// chapter.js (capítulo)
+
+// Dirección del backend
+const back = "http://localhost:3000";
+
 let mangaData = null;
 let currentChapter = null;
+let currentToken = null;
+let currentUser = null;
 
-// Definir la variable 'back' globalmente
-const back = "http://10.100.110.212:3000/";
-
+// --- Helpers para cookies ---
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 }
 
+// --- Validar token mediante lista de usuarios ---
 async function checkToken() {
     const token = getCookie("token");
     if (!token) {
         window.location.href = "../index.html";
-        return;
+        return false;
     }
+    currentToken = token;
 
-    const response = await fetch(back + "validate_token", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ token })
-    });
-
-    if (response.status !== 200) {
+    try {
+        const res = await fetch(back + "/list_users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+        });
+        if (res.status !== 200) {
+            window.location.href = "../index.html";
+            return false;
+        }
+        currentUser = getCookie("user");
+        if (!currentUser) console.error("Usuario no definido en cookies.");
+        return true;
+    } catch (err) {
+        console.error("Error validando token:", err);
         window.location.href = "../index.html";
+        return false;
     }
 }
 
+// --- Obtener datos y renderizar capítulo ---
 async function getChapterDetails() {
     const params = new URLSearchParams(window.location.search);
     const mangaTitle = params.get('manga');
@@ -38,131 +54,109 @@ async function getChapterDetails() {
 
     if (!mangaTitle || !mangaCid || !chapterNumber) return;
 
-    const mangaDetailsUrl = `https://jimov-api.vercel.app/manga/inmanga/title/${encodeURIComponent(mangaTitle)}?cid=${mangaCid}`;
-    const response = await fetch(mangaDetailsUrl);
-    mangaData = await response.json();
+    // Obtener metadata del manga
+    const detailsUrl = `https://jimov-api.vercel.app/manga/inmanga/title/${encodeURIComponent(mangaTitle)}?cid=${mangaCid}`;
+    const metaRes = await fetch(detailsUrl);
+    mangaData = await metaRes.json();
 
-    if (mangaData && mangaData.chapters) {
-        currentChapter = mangaData.chapters.find(ch => ch.number == chapterNumber);
+    // Encontrar capítulo actual
+    currentChapter = mangaData.chapters.find(ch => ch.number == chapterNumber);
+    if (!currentChapter) return;
 
-        if (currentChapter) {
-            document.getElementById("chapter-title").textContent = `Capítulo ${currentChapter.number}: ${mangaTitle}`;
-            const chapterUrl = `https://jimov-api.vercel.app${currentChapter.url}`;
-            const chapterResponse = await fetch(chapterUrl);
-            const chapterData = await chapterResponse.json();
+    document.getElementById("chapter-title").textContent = `Capítulo ${currentChapter.number}: ${mangaTitle}`;
 
-            if (chapterData && chapterData.images) {
-                const imagesContainer = document.getElementById("chapter-images");
-                imagesContainer.innerHTML = "";
-                chapterData.images.forEach(image => {
-                    const img = document.createElement('img');
-                    img.src = image.url;
-                    img.alt = image.name || `Imagen del capítulo ${currentChapter.number}`;
-                    imagesContainer.appendChild(img);
-                });
-            }
-
-            populateChapterSelector();
-            showNavigationButtons();
-        }
+    // Obtener imágenes del capítulo
+    const chapterUrl = `https://jimov-api.vercel.app${currentChapter.url}`;
+    const chapRes = await fetch(chapterUrl);
+    const chapData = await chapRes.json();
+    if (chapData.images) {
+        const imagesContainer = document.getElementById("chapter-images");
+        imagesContainer.innerHTML = "";
+        chapData.images.forEach(imgObj => {
+            const img = document.createElement('img');
+            img.src = imgObj.url;
+            img.alt = imgObj.name || `Imagen capítulo ${currentChapter.number}`;
+            imagesContainer.appendChild(img);
+        });
     }
+
+    populateChapterSelector();
+    showNavigationButtons();
 }
 
+// --- Selector de capítulos ---
 function populateChapterSelector() {
     const select = document.getElementById('chapter-select');
-    select.innerHTML = "";
-    mangaData.chapters.forEach(chapter => {
-        const option = document.createElement('option');
-        option.value = chapter.number;
-        option.textContent = `Capítulo ${chapter.number}`;
-        select.appendChild(option);
+    select.innerHTML = '';
+    mangaData.chapters.forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.number;
+        opt.textContent = `Capítulo ${ch.number}`;
+        select.appendChild(opt);
     });
-    document.getElementById('chapter-select').value = currentChapter.number;
+    select.value = currentChapter.number;
+    select.addEventListener('change', () => {
+        const num = select.value;
+        window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${num}`;
+    });
 }
 
-function loadChapterFromSelector() {
-    const selectedChapterNumber = document.getElementById('chapter-select').value;
-    if (selectedChapterNumber) {
-        const selectedChapter = mangaData.chapters.find(ch => ch.number == selectedChapterNumber);
-        if (selectedChapter) {
-            window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${selectedChapter.number}`;
-        }
-    }
-}
-
+// --- Botones de navegación ---
 function showNavigationButtons() {
-    const prevButton = document.getElementById('prev-chapter');
-    const nextButton = document.getElementById('next-chapter');
-    const navigationContainer = document.getElementById('navigation-buttons');
+    const prevBtn = document.getElementById('prev-chapter');
+    const nextBtn = document.getElementById('next-chapter');
+    const idx = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
 
-    const currentChapterIndex = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
+    if (idx > 0) prevBtn.style.display = 'inline-block'; else prevBtn.style.display = 'none';
+    if (idx < mangaData.chapters.length - 1) nextBtn.style.display = 'inline-block'; else nextBtn.style.display = 'none';
 
-    if (currentChapterIndex > 0) {
-        prevButton.style.display = "inline-block";
-    } else {
-        prevButton.style.display = "none";
-    }
-
-    if (currentChapterIndex < mangaData.chapters.length - 1) {
-        nextButton.style.display = "inline-block";
-    } else {
-        nextButton.style.display = "none";
-    }
-
-    navigationContainer.style.display = "block";
+    prevBtn.onclick = () => navigateChapter(-1);
+    nextBtn.onclick = () => navigateChapter(1);
+    document.getElementById('navigation-buttons').style.display = 'block';
 }
 
+// --- Navegar entre capítulos y marcar leído ---
 async function navigateChapter(direction) {
-    const currentChapterIndex = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
-    const nextChapterIndex = currentChapterIndex + direction;
+    const idx = mangaData.chapters.findIndex(ch => ch.number === currentChapter.number);
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= mangaData.chapters.length) return;
+    const nextCh = mangaData.chapters[nextIdx];
 
-    if (nextChapterIndex >= 0 && nextChapterIndex < mangaData.chapters.length) {
-        const nextChapter = mangaData.chapters[nextChapterIndex];
-        // Enviar solicitud POST para agregar el capítulo como leído
-        if (direction === 1) {
-            await markChapterAsRead(currentChapterIndex + 1);
-        }
-        // Navegar al siguiente capítulo
-        window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${nextChapter.number}`;
-    }
+    // Si avanzamos, marcar capítulo actual como leído
+    if (direction === 1) await markChapterAsRead(currentChapter.number || nextCh.number - 1);
+
+    window.location.href = `chapter.html?manga=${encodeURIComponent(mangaData.title)}&cid=${mangaData.id}&chapter=${nextCh.number}`;
 }
 
+// --- Marcar capítulo como leído en el backend ---
 async function markChapterAsRead(chapterNumber) {
-    const token = getCookie("token");
-    const mangaTitle = new URLSearchParams(window.location.search).get("manga");
-
-    const response = await fetch(back + "add_finished", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            token: token,
-            mangaName: mangaTitle,
-            chapterNumber: chapterNumber
-        })
-    });
-
-    if (response.status === 200) {
-        console.log("Capítulo marcado como leído");
-    } else {
-        console.error("Error al marcar capítulo como leído");
+    try {
+        const res = await fetch(back + "/add_finished", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                token: currentToken,
+                username: currentUser,
+                mangaName: new URLSearchParams(window.location.search).get('manga'),
+                chapterNumber: chapterNumber
+            })
+        });
+        if (!res.ok) console.error("Error marcando capítulo leído:", res.statusText);
+    } catch (err) {
+        console.error("Error marcando capítulo leído:", err);
     }
 }
 
+// --- Redireccionar al detalle de manga ---
 function redirectToMangaDetail() {
     const params = new URLSearchParams(window.location.search);
-    const mangaTitle = params.get('manga');
-    const mangaCid = params.get('cid');
-
-    if (mangaTitle && mangaCid) {
-        window.location.href = `manga-detalle.html?id=${encodeURIComponent(mangaTitle)}&cid=${mangaCid}`;
-    } else {
-        alert("No se pudo determinar el manga actual.");
-    }
+    const m = params.get('manga');
+    const c = params.get('cid');
+    if (m && c) window.location.href = `manga-detalle.html?id=${encodeURIComponent(m)}&cid=${c}`;
 }
 
-window.onload = async function () {
-    await checkToken();
+// --- Inicialización al cargar la página ---
+window.onload = async function() {
+    if (!(await checkToken())) return;
     await getChapterDetails();
 };

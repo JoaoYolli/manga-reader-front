@@ -1,72 +1,156 @@
-body {
-    font-family: Arial, sans-serif;
+/* Variables para colores, espaciados y tamaños */
+:root {
+    --color-bg: #f0f2f5;
+    --color-card: #ffffff;
+    --color-text: #333333;
+    --color-primary: #4a90e2;
+    --radius: 0.5rem;
+    --gap: 1rem;
+    --transition: 0.3s ease;
+    --font-base: 1rem;           /* 16px */
+    --font-scale: 1.2;
+    --card-min-width: 150px;
+    --card-max-width: 220px;
+  }
+  
+  /* Reset básico */
+  * {
+    box-sizing: border-box;
     margin: 0;
-    background-color: #666666;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
+    padding: 0;
+  }
+  
+  /* Body */
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--font-base);
+    background: var(--color-bg) fixed no-repeat center/cover;
+    color: var(--color-text);
     min-height: 100vh;
-}
-
-h1 {
-    font-size: 24px;
-    color: #fff;
-    text-align: center;
-    margin-top: 20px;
-}
-
-#search-box {
-    margin: 20px auto;
-    padding: 10px;
-    width: 80%;
-    max-width: 500px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    display: block;
-    background-color: white;
-}
-
-#results,
-#favorites {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.manga-card {
-    background-color: white;
-    padding: 10px;
-    width: 150px;
+    flex-direction: column;
+  }
+  
+  /* Cabeceras */
+  h1, h2 {
     text-align: center;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-    cursor: pointer;
-}
-
-.manga-card:hover {
-    transform: scale(1.05);
-}
-
-.manga-card img {
+    color: var(--color-primary);
+    margin: var(--gap) 0;
+  }
+  
+  h1 {
+    font-size: calc(var(--font-base) * 1.5);
+  }
+  
+  h2 {
+    font-size: calc(var(--font-base) * 1.25);
+  }
+  
+  /* Contenedor central */
+  .container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Buscador */
+  #search-box {
     width: 100%;
-    height: auto;
-    border-radius: 5px;
-}
-
-.manga-card h3 {
-    font-size: 14px;
-    margin-top: 10px;
-    color: #333;
-}
-
-h2 {
-    font-size: 20px;
-    color: #fff;
+    max-width: 500px;
+    margin: 0 auto var(--gap);
+    padding: 0.75rem 1rem;
+    font-size: var(--font-base);
+    border: 1px solid #ccc;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  
+  #search-box:focus {
+    border-color: var(--color-primary);
+  }
+  
+  /* Listados de resultados y favoritos */
+  #results,
+  #favorites {
+    display: grid;
+    gap: var(--gap);
+    margin-top: var(--gap);
+    grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), var(--card-max-width)));
+    justify-content: center;  /* centra las columnas */
+    justify-items: center;    /* centra cada tarjeta dentro de su celda */
+  }
+  
+  
+  /* Tarjeta de manga */
+  .manga-card {
+    background: var(--color-card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--transition), box-shadow var(--transition);
+    width: 100%;
+    max-width: var(--card-max-width);
+  }
+  
+  .manga-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  /* Imagen */
+  .manga-card img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+  }
+  
+  /* Título dentro de la tarjeta */
+  .manga-card h3 {
+    font-size: var(--font-base);
+    padding: 0.5rem;
     text-align: center;
-    margin-top: 30px;
-}
+    color: var(--color-text);
+    flex: 1;
+  }
+  
+  /* Media Queries */
+  @media (min-width: 600px) {
+    h1 {
+      font-size: calc(var(--font-base) * 1.75);
+    }
+    h2 {
+      font-size: calc(var(--font-base) * 1.5);
+    }
+    #search-box {
+      font-size: calc(var(--font-base) * 1.125);
+    }
+    .manga-card h3 {
+      font-size: calc(var(--font-base) * 1.125);
+    }
+  }
+  
+  @media (min-width: 992px) {
+    .container {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    #favorites {
+      margin-left: var(--gap);
+    }
+  }
+  
+  @media (min-width: 1200px) {
+    /* Opcional: fija 5 columnas en pantallas muy grandes */
+    #results,
+    #favorites {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+  
