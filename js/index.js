@@ -242,6 +242,8 @@ async function searchManga() {
 }
 
 async function searchMangasFav(mangas) {
+  const container = document.getElementById("favorites");
+  container.innerHTML = '';
   for (const manga of mangas) {
     const url = `https://jimov-api.vercel.app/manga/inmanga/filter?search=${encodeURIComponent(manga)}&type=0`;
     const res = await fetch(url);
@@ -254,7 +256,7 @@ async function searchMangasFav(mangas) {
 
 function searchMangas(mangas, containerId, name) {
   const container = document.getElementById(containerId);
-  /*if (containerId !== "favorites")*/ container.innerHTML = '';
+  if (containerId !== "favorites") container.innerHTML = '';
 
   mangas.forEach(manga => {
     if (name == manga.title) {
