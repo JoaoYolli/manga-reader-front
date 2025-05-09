@@ -1,53 +1,53 @@
-// front.js
-
 // Dirección del backend
-const back = "http://localhost:3000";
-
+const back = "https://manga-back.yolli.xyz";
 let debounceTimer;
 let currentToken = null;
 let currentUser = null;
 
-// Al cargar la página, validar token, usuario en cookies o pedir credenciales
+// Al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
-  const token = getCookie("token");
-  const savedUser = getCookie("user");
+  const token = localStorage.getItem("token");
+  const savedUser = localStorage.getItem("user");
+  const burger = document.getElementById('burger');
+  const menu = document.getElementById('menu');
+  const cerrarSesion = document.getElementById('cerrar-sesion');
 
-  // Validar token
-  if (!token || !(await validateToken(token))) {
-    await handleInvalidToken();
-    return;
-  }
-  currentToken = token;
-
-  // Si existe usuario en cookies, usarlo, sino preguntar
   if (savedUser) {
     currentUser = savedUser;
   } else {
     await askForUser();
   }
 
+  cerrarSesion.addEventListener('click', async () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    if (!token || !(await validateToken(token))) {
+      await handleInvalidToken();
+      return;
+    }
+    currentToken = token;
+    await fetchFavorites();
+  });
+
+  burger.addEventListener('click', () => {
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!burger.contains(e.target) && !menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
+  if (!token || !(await validateToken(token))) {
+    await handleInvalidToken();
+    return;
+  }
+  currentToken = token;
   await fetchFavorites();
 });
 
-// --- Helpers para cookies ---
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
-function setCookie(name, value, days = 7) {
-  let expires = '';
-  if (days) {
-    const date = new Date();
-    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-    expires = `; expires=${date.toUTCString()}`;
-  }
-  document.cookie = `${name}=${value || ''}${expires}; path=/;`;
-}
-
-// --- Validación de token contra el backend ---
+// --- Validación de token ---
 async function validateToken(token) {
   try {
     const res = await fetch(back + "/list_users", {
@@ -62,7 +62,7 @@ async function validateToken(token) {
   }
 }
 
-// --- Obtener y mostrar favoritos ---
+// --- Obtener favoritos ---
 async function fetchFavorites() {
   if (!currentUser) {
     console.error("Usuario no definido");
@@ -73,9 +73,9 @@ async function fetchFavorites() {
     const res = await fetch(back + "/get_favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        token: currentToken, 
-        username: currentUser 
+      body: JSON.stringify({
+        token: currentToken,
+        username: currentUser
       })
     });
     if (res.ok) {
@@ -89,7 +89,7 @@ async function fetchFavorites() {
   }
 }
 
-// --- Flujo si no hay token válido ---
+// --- Manejo de token inválido ---
 async function handleInvalidToken() {
   let attempts = 3;
   const pwdModal = createModal("Ingresa la contraseña");
@@ -108,7 +108,7 @@ async function handleInvalidToken() {
       });
       if (res.ok) {
         const { token } = await res.json();
-        setCookie('token', token);
+        localStorage.setItem('token', token);
         currentToken = token;
         pwdModal.remove();
 
@@ -125,7 +125,7 @@ async function handleInvalidToken() {
   });
 }
 
-// --- Pedir al usuario que seleccione su nombre o cree uno nuevo ---
+// --- Selección o creación de usuario ---
 async function askForUser() {
   let users = [];
   try {
@@ -143,7 +143,6 @@ async function askForUser() {
     return;
   }
 
-  // Construir modal con selección y opción de crear
   const userModal = createModal("Elige o crea tu usuario", users, true);
   document.body.appendChild(userModal);
 
@@ -155,7 +154,7 @@ async function askForUser() {
     const sel = select.value;
     if (!sel) return alert("Debes elegir un usuario.");
     currentUser = sel;
-    setCookie('user', sel);
+    localStorage.setItem('user', sel);
     userModal.remove();
     fetchFavorites();
   });
@@ -171,7 +170,7 @@ async function askForUser() {
       });
       if (res.ok) {
         currentUser = newUser;
-        setCookie('user', newUser);
+        localStorage.setItem('user', newUser);
         userModal.remove();
         await fetchFavorites();
       } else if (res.status === 409) {
@@ -185,7 +184,7 @@ async function askForUser() {
   });
 }
 
-// --- Función genérica para crear modales de contraseña o selección ---
+// --- Crear modal genérico ---
 function createModal(title, options = null, allowCreate = false) {
   const modal = document.createElement("div");
   Object.assign(modal.style, {
@@ -198,142 +197,117 @@ function createModal(title, options = null, allowCreate = false) {
 
   let inner = `
   <div style="
-      background:#333; color:#fff; padding:20px;
-      border-radius:8px; text-align:center; width:300px;
-      box-shadow:0 4px 8px rgba(0,0,0,0.2);
+    background:#333; color:#fff; padding:20px;
+    border-radius:8px; text-align:center; width:300px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.2);
   ">
-    <h2 style="margin-bottom:20px; font-size:1.5rem;">
-      ${title}
-    </h2>`;
+    <h2 style="margin-bottom:20px; font-size:1.5rem;">${title}</h2>
+  `;
 
   if (options) {
-    inner += `<select id="user-select" style="
-        margin-bottom:10px; width:100%; padding:10px;
-        border:none; border-radius:4px; font-size:1rem;
-    "><option value="">-- Selecciona usuario --</option>` +
-      options.map(u => `<option value="${u}">${u}</option>`).join("") +
-      `</select>`;
+    inner += `<select id="user-select" style="margin-bottom:10px; width:100%; padding:10px; border:none; border-radius:4px; font-size:1rem;">
+      <option value="">-- Selecciona usuario --</option>
+      ${options.map(u => `<option value="${u}">${u}</option>`).join("")}
+    </select>`;
   }
 
   if (options && allowCreate) {
-    inner += `
-    <button id="create-user" style="
-      margin-bottom:10px; padding:10px 20px;
-      border:none; border-radius:4px;
-      background-color:#28a745; color:#fff;
-      font-size:1rem; cursor:pointer;
-    ">Crear usuario</button>`;
+    inner += `<button id="create-user" style="margin-bottom:10px; padding:10px 20px; border:none; border-radius:4px; background-color:#28a745; color:#fff; font-size:1rem; cursor:pointer;">Crear usuario</button>`;
   }
 
   if (!options) {
-    inner += `<input type="password" id="password-input"
-      placeholder="Contraseña"
-      style="margin-bottom:20px; width:100%; padding:10px;
-             border:none; border-radius:4px; font-size:1rem;"
-    />`;
+    inner += `<input type="password" id="password-input" placeholder="Contraseña" style="margin-bottom:20px; width:100%; padding:10px; border:none; border-radius:4px; font-size:1rem;" />`;
   }
 
-  inner += `
-    <button id="${options ? 'submit-user' : 'submit-password'}" style="
-      padding:10px 20px; border:none; border-radius:4px;
-      background-color:#007bff; color:#fff; font-size:1rem;
-      cursor:pointer;
-    ">
-      ${options ? 'Seleccionar' : 'Enviar'}
-    </button>
-  </div>`;
+  inner += `<button id="${options ? 'submit-user' : 'submit-password'}" style="padding:10px 20px; border:none; border-radius:4px; background-color:#007bff; color:#fff; font-size:1rem; cursor:pointer;">${options ? 'Seleccionar' : 'Enviar'}</button></div>`;
 
   modal.innerHTML = inner;
   return modal;
 }
 
-// --- Búsqueda principal de mangas ---
+// --- Búsqueda de mangas ---
 async function searchManga() {
-    const q = document.getElementById("search-box").value;
-    if (q.length < 3) return;
-  
-    const url = `https://jimov-api.vercel.app/manga/inmanga/filter?search=${encodeURIComponent(q)}&type=0`;
+  const q = document.getElementById("search-box").value;
+  if (q.length < 3) return;
+
+  const url = `https://jimov-api.vercel.app/manga/inmanga/filter?search=${encodeURIComponent(q)}&type=0`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.results && data.results.length) {
+    searchMangasNormal(data.results, "results");
+  } else {
+    document.getElementById("results").innerHTML = '<p>No se encontraron mangas.</p>';
+  }
+}
+
+async function searchMangasFav(mangas) {
+  for (const manga of mangas) {
+    const url = `https://jimov-api.vercel.app/manga/inmanga/filter?search=${encodeURIComponent(manga)}&type=0`;
     const res = await fetch(url);
     const data = await res.json();
-  
     if (data.results && data.results.length) {
-      searchMangasNormal(data.results, "results");
-    } else {
-      document.getElementById("results").innerHTML = '<p>No se encontraron mangas.</p>';
+      searchMangas(data.results, "favorites", manga);
     }
   }
-  
-  // --- Mostrar favoritos buscando cada manga ---
-  async function searchMangasFav(mangas) {
-    for (const manga of mangas) {
-      const url = `https://jimov-api.vercel.app/manga/inmanga/filter?search=${encodeURIComponent(manga)}&type=0`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.results && data.results.length) {
-        searchMangas(data.results, "favorites", manga);
-      }
-    }
-  }
-  
-  // --- Render de tarjetas de manga con restricion de favoritos ---
-  function searchMangas(mangas, containerId, name) {
-    const container = document.getElementById(containerId);
-    if (containerId !== "favorites") container.innerHTML = '';
-  
-    mangas.forEach(manga => {
-        if(name == manga.title){
+}
+
+function searchMangas(mangas, containerId, name) {
+  const container = document.getElementById(containerId);
+  /*if (containerId !== "favorites")*/ container.innerHTML = '';
+
+  mangas.forEach(manga => {
+    if (name == manga.title) {
       const card = document.createElement('div');
       card.classList.add('manga-card');
-      card.setAttribute('data-url', 
+      card.setAttribute('data-url',
         `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
       );
       card.addEventListener('click', () => {
         window.location.href = card.getAttribute('data-url');
       });
-  
+
       const img = document.createElement('img');
       img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';
       card.appendChild(img);
-  
+
       const title = document.createElement('h3');
       title.textContent = manga.title;
       card.appendChild(title);
-  
+
       container.appendChild(card);
     }
+  });
+}
+
+function searchMangasNormal(mangas, containerId) {
+  const container = document.getElementById(containerId);
+  if (containerId !== "favorites") container.innerHTML = '';
+
+  mangas.forEach(manga => {
+    const card = document.createElement('div');
+    card.classList.add('manga-card');
+    card.setAttribute('data-url',
+      `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
+    );
+    card.addEventListener('click', () => {
+      window.location.href = card.getAttribute('data-url');
     });
-  }
-  // --- Render de tarjetas de manga ---
-  function searchMangasNormal(mangas, containerId, name) {
-    const container = document.getElementById(containerId);
-    if (containerId !== "favorites") container.innerHTML = '';
-  
-    mangas.forEach(manga => {
-      const card = document.createElement('div');
-      card.classList.add('manga-card');
-      card.setAttribute('data-url', 
-        `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
-      );
-      card.addEventListener('click', () => {
-        window.location.href = card.getAttribute('data-url');
-      });
-  
-      const img = document.createElement('img');
-      img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';
-      card.appendChild(img);
-  
-      const title = document.createElement('h3');
-      title.textContent = manga.title;
-      card.appendChild(title);
-  
-      container.appendChild(card);
-    
-    });
-  }
-  
-  // --- Búsqueda con debounce ---
-  function debouncedSearch() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(searchManga, 500);
-  }
-  
+
+    const img = document.createElement('img');
+    img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';
+    card.appendChild(img);
+
+    const title = document.createElement('h3');
+    title.textContent = manga.title;
+    card.appendChild(title);
+
+    container.appendChild(card);
+  });
+}
+
+// --- Debounced search ---
+function debouncedSearch() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(searchManga, 500);
+}

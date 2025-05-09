@@ -1,29 +1,61 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscar Manga</title>
-    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-    <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="css/index.css">
-    <link rel="icon" href="img/logo.ico">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Buscar Manga</title>
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="icon" href="img/logo.ico">
 </head>
-
 <body>
+  <!-- Contenedor cabecera -->
+  <header class="header">
+    <div class="div_centrado">
+      <h1>Buscador de Manga</h1>
+    </div>
+    <!-- Botón hamburguesa -->
+    <div id="burger" class="burger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <!-- Menú desplegable -->
+    <nav id="menu" class="menu">
+      <ul>
+        <li><a href="#" id="cerrar-sesion" >Cerrar sesion</a></li>
+        <li><a href="#">Offline</a></li>
+        <li class="has-submenu">
+          <a href="#">Descargar ▾</a>
+          <ul class="submenu">
+            <li><a href=".\downloads\Manga Reader Setup 1.0.0.exe" download="MangaReader.exe">Windows Installer</a></li>
+            <li><a href="./downloads/" download="NoAvaiable.apk">Android Installer</a></li>
+            <li><a href="./downloads/" download="NoAvaiable.mac">Mac Installer</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
 
-    <h1>Buscador de Manga</h1>
-    <input type="text" id="search-box" placeholder="Ingresa el nombre de un manga..." onkeyup="debouncedSearch()">
+  <!-- Contenido principal -->
+  <main>
+    <div class="div_centrado">  
+      <input
+      type="text"
+      id="search-box"
+      placeholder="Ingresa el nombre de un manga..."
+      onkeyup="debouncedSearch()"
+      />
+    </div>
 
     <h2>Resultados de Búsqueda</h2>
     <div id="results"></div>
-
     <h2>Favoritos</h2>
     <div id="favorites"></div>
+  </main>
 
-    <script src="js/index.js"></script>
-
+  <script src="js/index.js"></script>
+  <script src="js/menu.js"></script>
 </body>
-
 </html>
