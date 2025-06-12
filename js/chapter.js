@@ -123,17 +123,18 @@ function populateChapterSelector() {
 function showNavigationButtons() {
     const prevBtn = document.getElementById('prev-chapter');
     const nextBtn = document.getElementById('next-chapter');
+    const readBtn = document.getElementById('readen-chapter');
     const chapters = mangaData.chapters.map(ch => ({
         ...ch,
         number: Number(ch.number)
     })).sort((a, b) => a.number - b.number);
     const idx = chapters.findIndex(ch => ch.number === Number(currentChapter.number));
 
-    if (idx > 0) prevBtn.style.display = 'inline-block';
-    else prevBtn.style.display = 'none';
+    if (idx > 0) { prevBtn.style.display = 'inline-block'; }
+    else { prevBtn.style.display = 'none'; }
 
-    if (idx < chapters.length - 1) nextBtn.style.display = 'inline-block';
-    else nextBtn.style.display = 'none';
+    if (idx < chapters.length - 1) { nextBtn.style.display = 'inline-block'; readBtn.style.display = 'none'; }
+    else { nextBtn.style.display = 'none'; readBtn.style.display = 'inline-block';}
 
     prevBtn.onclick = () => navigateChapter(-1);
     nextBtn.onclick = () => navigateChapter(1);
@@ -167,6 +168,9 @@ async function navigateChapter(direction) {
 
 // --- Marcar capítulo como leído en el backend ---
 async function markChapterAsRead(chapterNumber) {
+    if(chapterNumber === -256){
+        chapterNumber = currentChapter.number;
+    }
     try {
         const res = await fetch(back + "/add_finished", {
             method: "POST",

@@ -290,6 +290,21 @@ function markChaptersAsRead(finishedArray) {
     });
 }
 
+function hideReaden() {
+    const list = document.getElementById("chapters-list");
+    Array.from(list.getElementsByClassName('read')).forEach(item => {
+        item.style.display = 'none'; // Oculta el elemento
+    });
+}
+
+// Nueva función para volver a mostrar los capítulos leídos
+function showReaden() {
+    const list = document.getElementById("chapters-list");
+    Array.from(list.getElementsByClassName('read')).forEach(item => {
+        item.style.display = ''; // Restablece el display por defecto
+    });
+}
+
 async function markChapterAsRead(chapterNumber) {
     try {
         const res = await fetch(back + "/add_finished", {
@@ -313,7 +328,7 @@ function showConfirmationModal(message) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.classList.add('custom-modal');
-        modal.innerHTML = 
+        modal.innerHTML =
             `<div class="custom-modal-content">
                 <p>${message}</p>
                 <div class="custom-modal-buttons">
@@ -341,4 +356,12 @@ window.onload = async function () {
     await getMangaDetails();
     await getFinishedChapters();
     await initializeFavoriteCheckbox();
+    document.getElementById('toggle-read').addEventListener('change', async function () {
+        if (this.checked) {
+            showReaden();
+        }
+        else {
+            hideReaden();
+        }
+    });
 };

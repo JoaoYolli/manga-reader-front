@@ -39,10 +39,12 @@
             <div id="navigation-buttons" style="display: none;">
                 <button id="prev-chapter" onclick="navigateChapter(-1)">Capítulo anterior</button>
                 <button id="next-chapter" onclick="navigateChapter(1)">Capítulo siguiente</button>
+                <button id="readen-chapter" onclick="markChapterAsRead(-256)">Marcar como leido</button>
             </div>
         </section>
     </main>
 
+    <script src="/js/service_worker_register.js"></script>
     <script src="../js/chapter.js"></script>
 </body>
 

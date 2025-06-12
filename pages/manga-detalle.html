@@ -31,6 +31,13 @@
         <input type="number" id="mark-up-to-input" min="1" placeholder="1 - N">
         <button id="mark-up-to-btn">Aceptar</button>
     </div>
+
+    <!-- Toggle para mostrar/ocultar capítulos leídos -->
+    <div class="mark-up-to" style="text-align:center; margin-top:1rem;">
+        <input type="checkbox" id="toggle-read" checked>
+        <label for="toggle-read" style="cursor:pointer;">Mostrar capítulos leídos</label>
+    </div>
+
     <!-- Sección de capítulos -->
     <div id="chapters-list">
         <h2>Capítulos</h2>
@@ -38,9 +45,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="/js/service_worker_register.js"></script>
     <script src="../js/manga-detalle.js"></script>
-    <script src="../js/worker.js"></script>
-
 </body>
 
 </html>

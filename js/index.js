@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   currentToken = token;
   await fetchFavorites();
+  await askPermission();
 });
 
 // --- Validación de token ---
@@ -114,6 +115,7 @@ async function handleInvalidToken() {
 
         await askForUser();
         await fetchFavorites();
+        await askPermission();
       } else {
         attempts--;
         alert(`Contraseña incorrecta. Quedan ${attempts} intentos.`);
