@@ -4,8 +4,24 @@ let debounceTimer;
 let currentToken = null;
 let currentUser = null;
 
+// --- Comprobación de conectividad con el backend ---
+async function isBackendReachable() {
+  if (!navigator.onLine) return false;
+  try {
+    const res = await fetch(back + "/vapidPublicKey", { signal: AbortSignal.timeout(3000) });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
 // Al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await isBackendReachable())) {
+    window.location.replace('pages/offline.html');
+    return;
+  }
+
   const token = localStorage.getItem("token");
   const savedUser = localStorage.getItem("user");
   const burger = document.getElementById('burger');
@@ -261,11 +277,11 @@ function searchMangas(mangas, containerId, name) {
   if (containerId !== "favorites") container.innerHTML = '';
 
   mangas.forEach(manga => {
-    if (name == manga.title) {
+    if (name == manga.name) {
       const card = document.createElement('div');
       card.classList.add('manga-card');
       card.setAttribute('data-url',
-        `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
+        `pages/manga-detalle.html?id=${encodeURIComponent(manga.name)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
       );
       card.addEventListener('click', () => {
         window.location.href = card.getAttribute('data-url');
@@ -276,7 +292,7 @@ function searchMangas(mangas, containerId, name) {
       card.appendChild(img);
 
       const title = document.createElement('h3');
-      title.textContent = manga.title;
+      title.textContent = manga.name;
       card.appendChild(title);
 
       container.appendChild(card);
@@ -292,7 +308,7 @@ function searchMangasNormal(mangas, containerId) {
     const card = document.createElement('div');
     card.classList.add('manga-card');
     card.setAttribute('data-url',
-      `pages/manga-detalle.html?id=${encodeURIComponent(manga.title)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
+      `pages/manga-detalle.html?id=${encodeURIComponent(manga.name)}&cid=${encodeURIComponent(manga.url.split('?cid=')[1])}`
     );
     card.addEventListener('click', () => {
       window.location.href = card.getAttribute('data-url');
@@ -303,7 +319,7 @@ function searchMangasNormal(mangas, containerId) {
     card.appendChild(img);
 
     const title = document.createElement('h3');
-    title.textContent = manga.title;
+    title.textContent = manga.name;
     card.appendChild(title);
 
     container.appendChild(card);

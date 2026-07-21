@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capítulo del Manga</title>
+    <title>Capítulo (offline)</title>
     <link rel="stylesheet" href="../css/chapter.css">
     <link rel="icon" href="../img/logo.ico">
 </head>
@@ -12,15 +12,11 @@
 <body>
 
     <header>
-        <!-- Logo que redirige a index.html -->
-        <img id="home-button" src="../img/home.png" alt="Logo de la página" onclick="window.location.href = '../index.html';">
+        <!-- Logo que redirige a la sección Offline -->
+        <img id="home-button" src="../img/home.png" alt="Volver a Offline" onclick="window.location.href = 'offline.html';">
+        <img src="../img/manga.png" id="logo" alt="Volver a los capítulos del manga" onclick="redirectToOfflineManga()">
 
-        <!-- Botón de casita -->
-        <!-- <div id="logo" > -->
-            <img src="../img/manga.png" id="logo" alt="Volver al detalle del manga" onclick="redirectToMangaDetail()">
-        <!-- </div> -->
-
-        <h1>Capítulo del Manga</h1>
+        <h1>Capítulo del Manga (offline)</h1>
     </header>
 
     <main>
@@ -42,16 +38,15 @@
             <div id="chapter-images"></div>
 
             <div id="navigation-buttons" style="display: none;">
-                <button id="prev-chapter" onclick="navigateChapter(-1)">Capítulo anterior</button>
-                <button id="next-chapter" onclick="navigateChapter(1)">Capítulo siguiente</button>
-                <button id="readen-chapter" onclick="markChapterAsRead(-256)">Marcar como leido</button>
+                <button id="prev-chapter">Capítulo anterior</button>
+                <button id="next-chapter">Capítulo siguiente</button>
             </div>
         </section>
     </main>
 
-    <script src="/js/service_worker_register.js"></script>
+    <script src="../js/offline-db.js"></script>
     <script src="../js/reader-size-control.js"></script>
-    <script src="../js/chapter.js"></script>
+    <script src="../js/offline-chapter.js"></script>
 </body>
 
 </html>

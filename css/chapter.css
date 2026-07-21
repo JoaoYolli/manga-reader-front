@@ -88,15 +88,34 @@
   #chapter-images {
     width: 100%;
   }
-  
+
   #chapter-images img {
     width: 100%;
     max-width: 100%;
+    height: auto;
     margin-bottom: 0.625rem;
+    margin-left: auto;
+    margin-right: auto;
     border-radius: var(--radius);
     display: block;
   }
-  
+
+  /* ================================
+     Control de tamaño de imagen (tablet/escritorio)
+     ================================ */
+  #image-size-control {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: var(--gap);
+    font-size: 0.9rem;
+  }
+
+  #image-size-control input[type="range"] {
+    flex: 1;
+  }
+
   /* ================================
      Navegación entre Capítulos
      ================================ */
@@ -181,9 +200,49 @@
   /* ================================
      Media Queries
      ================================ */
+
+  /* Móvil: las imágenes ocupan todo el ancho de pantalla disponible */
   @media (max-width: 600px) {
+    body {
+      padding: 0;
+    }
+
+    header {
+      padding: var(--gap) var(--gap) 0;
+    }
+
+    #chapter-details {
+      padding: var(--gap) 0;
+      border-radius: 0;
+      box-shadow: none;
+      background-color: transparent;
+      max-width: 100%;
+    }
+
+    #chapter-select,
+    .chapter-title,
+    #navigation-buttons {
+      margin-left: var(--gap);
+      margin-right: var(--gap);
+      width: calc(100% - 2 * var(--gap));
+    }
+
+    #chapter-images img {
+      border-radius: 0;
+    }
+
     #navigation-buttons button {
       flex: 1 1 100%;
     }
   }
-  
+
+  /* Tablet/escritorio: se puede ajustar el tamaño de las imágenes */
+  @media (min-width: 601px) {
+    #image-size-control {
+      display: flex;
+    }
+
+    #chapter-images img {
+      width: var(--reader-img-scale, 100%);
+    }
+  }

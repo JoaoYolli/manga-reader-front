@@ -60,16 +60,16 @@ async function getChapterDetails() {
     if (!mangaTitle || !mangaCid || !chapterNumber) return;
 
     // Obtener metadata del manga
-    const detailsUrl = `https://jimov-api.vercel.app/manga/inmanga/title/${encodeURIComponent(mangaTitle)}?cid=${mangaCid}`;
+    const detailsUrl = `https://jimov-api.vercel.app/manga/inmanga/name/${encodeURIComponent(mangaTitle)}?cid=${mangaCid}`;
     const metaRes = await fetch(detailsUrl);
     mangaData = await metaRes.json();
 
     // Encontrar capítulo actual
-    currentChapter = mangaData.chapters.find(ch => ch.number == chapterNumber);
+    currentChapter = mangaData.chapters.find(ch => ch.num == chapterNumber);
     if (!currentChapter) return;
 
     document.getElementById("chapter-title").textContent =
-        `Capítulo ${currentChapter.number}: ${mangaTitle}`;
+        `Capítulo ${currentChapter.num}: ${mangaTitle}`;
 
     // Obtener imágenes del capítulo
     const chapterUrl = `https://jimov-api.vercel.app${currentChapter.url}`;
@@ -81,7 +81,7 @@ async function getChapterDetails() {
         chapData.images.forEach(imgObj => {
             const img = document.createElement('img');
             img.src = imgObj.url;
-            img.alt = imgObj.name || `Imagen capítulo ${currentChapter.number}`;
+            img.alt = imgObj.name || `Imagen capítulo ${currentChapter.num}`;
             imagesContainer.appendChild(img);
         });
     }
@@ -95,24 +95,24 @@ function populateChapterSelector() {
     const select = document.getElementById('chapter-select');
 
     // 1. Ordenamos numéricamente los capítulos
-    mangaData.chapters.sort((a, b) => Number(a.number) - Number(b.number));
+    mangaData.chapters.sort((a, b) => Number(a.num) - Number(b.num));
 
     // 2. Vaciamos el selector y lo rellenamos en orden
     select.innerHTML = '';
     mangaData.chapters.forEach(ch => {
         const opt = document.createElement('option');
-        opt.value = ch.number;
-        opt.textContent = `Capítulo ${ch.number}`;
+        opt.value = ch.num;
+        opt.textContent = `Capítulo ${ch.num}`;
         select.appendChild(opt);
     });
 
     // 3. Seleccionamos el capítulo actual
-    select.value = currentChapter.number;
+    select.value = currentChapter.num;
 
     // 4. Manejador para cambiar de capítulo
     select.addEventListener('change', () => {
         const num = select.value;
-        const title = encodeURIComponent(mangaData.title);
+        const title = encodeURIComponent(mangaData.name);
         const cid = mangaData.id;
         window.location.href =
             `chapter.html?manga=${title}&cid=${cid}&chapter=${num}`;
@@ -126,9 +126,9 @@ function showNavigationButtons() {
     const readBtn = document.getElementById('readen-chapter');
     const chapters = mangaData.chapters.map(ch => ({
         ...ch,
-        number: Number(ch.number)
+        number: Number(ch.num)
     })).sort((a, b) => a.number - b.number);
-    const idx = chapters.findIndex(ch => ch.number === Number(currentChapter.number));
+    const idx = chapters.findIndex(ch => ch.number === Number(currentChapter.num));
 
     if (idx > 0) { prevBtn.style.display = 'inline-block'; }
     else { prevBtn.style.display = 'none'; }
@@ -144,11 +144,11 @@ function showNavigationButtons() {
 // --- Navegar entre capítulos y marcar leído ---
 async function navigateChapter(direction) {
     const chapters = mangaData.chapters
-        .map(ch => ({ ...ch, number: Number(ch.number) }))
+        .map(ch => ({ ...ch, number: Number(ch.num) }))
         .sort((a, b) => a.number - b.number);
 
     const idx = chapters.findIndex(
-        ch => ch.number === Number(currentChapter.number)
+        ch => ch.number === Number(currentChapter.num)
     );
     const nextIdx = idx + direction;
 
@@ -157,11 +157,11 @@ async function navigateChapter(direction) {
     const nextCh = chapters[nextIdx];
 
     if (direction === 1) {
-        await markChapterAsRead(Number(currentChapter.number));
+        await markChapterAsRead(Number(currentChapter.num));
     }
 
     window.location.href =
-        `chapter.html?manga=${encodeURIComponent(mangaData.title)
+        `chapter.html?manga=${encodeURIComponent(mangaData.name)
         }&cid=${mangaData.id
         }&chapter=${nextCh.number}`;
 }
@@ -169,7 +169,7 @@ async function navigateChapter(direction) {
 // --- Marcar capítulo como leído en el backend ---
 async function markChapterAsRead(chapterNumber) {
     if(chapterNumber === -256){
-        chapterNumber = currentChapter.number;
+        chapterNumber = currentChapter.num;
     }
     try {
         const res = await fetch(back + "/add_finished", {

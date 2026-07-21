@@ -5,6 +5,7 @@ const back = "https://manga-back.yolli.xyz";
 
 let currentToken = null;
 let currentUser = null;
+let currentMangaThumbnailUrl = null;
 
 // --- Helpers para localStorage ---
 function getToken() {
@@ -51,14 +52,17 @@ async function getMangaDetails() {
     const cid = params.get('cid');
     if (!title || !cid) return;
 
-    const url = `https://jimov-api.vercel.app/manga/inmanga/title/${encodeURIComponent(title)}?cid=${cid}`;
+    const url = `https://jimov-api.vercel.app/manga/inmanga/name/${encodeURIComponent(title)}?cid=${cid}`;
     try {
         const res = await fetch(url);
         const data = await res.json();
         if (data) {
-            if (data.thumbnail?.url) document.body.style.backgroundImage = `url(${data.thumbnail.url})`;
-            document.getElementById("manga-title").textContent = data.title;
-            document.getElementById("manga-details").innerHTML = `<p>${data.description}</p>`;
+            if (data.thumbnail?.url) {
+                currentMangaThumbnailUrl = data.thumbnail.url;
+                document.body.style.backgroundImage = `url(${data.thumbnail.url})`;
+            }
+            document.getElementById("manga-title").textContent = data.name;
+            document.getElementById("manga-details").innerHTML = `<p>${data.synopsis}</p>`;
             renderChapters(data.chapters, title, cid);
         }
     } catch (err) {
@@ -76,8 +80,8 @@ function renderChapters(chapters, title, cid) {
     });
 
     // Ordenar capítulos por número
-    const sorted = [...chapters].sort((a, b) => Number(a.number) - Number(b.number));
-    const maxNum = sorted.length ? Number(sorted.at(-1).number) : 0;
+    const sorted = [...chapters].sort((a, b) => Number(a.num) - Number(b.num));
+    const maxNum = sorted.length ? Number(sorted.at(-1).num) : 0;
 
     // Configurar input de "marcar hasta"
     const input = document.getElementById('mark-up-to-input');
@@ -102,18 +106,22 @@ function renderChapters(chapters, title, cid) {
     sorted.forEach(ch => {
         const item = document.createElement('div');
         item.classList.add('chapter');
-        item.setAttribute('data-chapter-number', ch.number);
+        item.setAttribute('data-chapter-number', ch.num);
 
         const link = document.createElement('a');
-        link.href = `chapter.html?manga=${encodeURIComponent(title)}&cid=${cid}&chapter=${ch.number}`;
-        link.textContent = ch.title || `Capítulo ${ch.number}`;
+        link.href = `chapter.html?manga=${encodeURIComponent(title)}&cid=${cid}&chapter=${ch.num}`;
+        link.textContent = ch.name || `Capítulo ${ch.num}`;
 
         const btn = document.createElement('button');
         btn.textContent = 'A';
         btn.classList.add('download-btn');
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', async e => {
             e.preventDefault();
-            downloadChapter(ch.number, title, `https://jimov-api.vercel.app${ch.url}`);
+            if (btn.classList.contains('downloaded')) {
+                const overwrite = await showConfirmationModal('Este capítulo ya está descargado. ¿Quieres volver a descargarlo?');
+                if (!overwrite) return;
+            }
+            downloadChapter(ch.num, title, cid, ch.name, `https://jimov-api.vercel.app${ch.url}`, btn);
         });
 
         item.append(link, btn);
@@ -121,98 +129,58 @@ function renderChapters(chapters, title, cid) {
     });
 }
 
-// --- Descargar capítulo como PDF ---
-async function downloadChapter(chapterNumber, mangaTitle, url) {
-    const { jsPDF } = window.jspdf;
+// --- Descargar capítulo para lectura offline ---
+async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url, btn) {
     const proxy = back + "/proxy";
+    const download = createDownload(`${mangaTitle} - Cap. ${chapterNumber}`);
 
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: download.signal });
         const data = await res.json();
         const images = data.images || [];
-        if (!images.length) return console.error("No hay imágenes");
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const [pw, ph] = [210, 297];
-        let y = 0;
-        const progress = createProgress();
-        document.body.append(progress.container);
-
-        for (let i = 0; i < images.length; i++) {
-            const b64 = await fetchProxyImage(images[i].url, proxy);
-            const dims = await getImageDimensions(b64);
-            const scale = Math.min(pw / dims.width, ph / dims.height);
-            if (y + dims.height * scale > ph) {
-                pdf.addPage();
-                y = 0;
-            }
-            pdf.addImage(b64, 'JPEG', 0, y, dims.width * scale, dims.height * scale);
-            y += dims.height * scale;
-            progress.fill.style.width = `${((i + 1) / images.length) * 100}%`;
-            await new Promise(r => setTimeout(r, 10));
+        if (!images.length) {
+            console.error("No hay imágenes");
+            return;
         }
 
-        pdf.save(`${mangaTitle.replace(/\s+/g, '-')}-Cap-${chapterNumber}.pdf`);
-        progress.container.remove();
+        const pages = [];
+        for (let i = 0; i < images.length; i++) {
+            pages.push(await fetchProxyImage(images[i].url, proxy, download.signal));
+            download.setProgress(Math.round(((i + 1) / images.length) * 100));
+        }
+
+        await saveChapterOffline({ mangaTitle, cid, chapterNumber, chapterTitle, pages });
+
+        const mangaMeta = await getOfflineManga(mangaTitle);
+        if (!mangaMeta?.thumbnail && currentMangaThumbnailUrl) {
+            const thumbnail = await fetchProxyImage(currentMangaThumbnailUrl, proxy, download.signal);
+            await saveMangaMeta({ mangaTitle, cid, thumbnail });
+        } else {
+            await saveMangaMeta({ mangaTitle, cid });
+        }
+
+        await requestPersistentStorage();
+
+        if (btn) btn.classList.add('downloaded');
     } catch (err) {
-        console.error("Error descargando capítulo:", err);
+        if (err.name === 'AbortError') {
+            console.log('Descarga cancelada:', mangaTitle, chapterNumber);
+        } else {
+            console.error("Error descargando capítulo:", err);
+        }
+    } finally {
+        download.finish();
     }
 }
 
-function createProgress() {
-    const c = document.createElement('div');
-    Object.assign(c.style, {
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%,-50%)',
-        background: 'rgba(0,0,0,0.7)',
-        padding: '20px',
-        borderRadius: '10px',
-        color: '#fff',
-        textAlign: 'center',
-        zIndex: 9999
-    });
-    const p = document.createElement('p');
-    p.innerText = 'Recogiendo páginas...';
-    const bar = document.createElement('div');
-    Object.assign(bar.style, {
-        width: '100%',
-        height: '10px',
-        background: '#ccc',
-        borderRadius: '5px',
-        marginTop: '10px'
-    });
-    const fill = document.createElement('div');
-    Object.assign(fill.style, {
-        height: '100%',
-        width: '0%',
-        background: '#4caf50',
-        borderRadius: '5px'
-    });
-    bar.append(fill);
-    c.append(p, bar);
-    return { container: c, fill };
-}
-
-async function fetchProxyImage(url, proxy) {
+async function fetchProxyImage(url, proxy, signal) {
     const res = await fetch(proxy, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: currentToken, url })
+        body: JSON.stringify({ token: currentToken, url }),
+        signal
     });
-    const buf = await res.arrayBuffer();
-    const b64 = btoa(new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), ''));
-    return `data:image/jpeg;base64,${b64}`;
-}
-
-function getImageDimensions(b64) {
-    return new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => res({ width: img.naturalWidth, height: img.naturalHeight });
-        img.onerror = e => rej(e);
-        img.src = b64;
-    });
+    return res.blob();
 }
 
 // --- Favoritos ---
@@ -280,6 +248,24 @@ async function getFinishedChapters() {
     } catch (err) {
         console.error("Error al obtener capítulos terminados:", err);
     }
+}
+
+// --- Capítulos descargados offline ---
+async function markChaptersOffline() {
+    const params = new URLSearchParams(window.location.search);
+    const mangaTitle = params.get('id');
+    if (!mangaTitle) return;
+
+    const offlineChapters = await listOfflineChapters(mangaTitle);
+    const offlineSet = new Set(offlineChapters.map(ch => ch.chapterNumber));
+
+    const list = document.getElementById("chapters-list");
+    Array.from(list.getElementsByClassName('chapter')).forEach(item => {
+        const num = parseInt(item.getAttribute('data-chapter-number'), 10);
+        if (offlineSet.has(num)) {
+            item.querySelector('.download-btn')?.classList.add('downloaded');
+        }
+    });
 }
 
 function markChaptersAsRead(finishedArray) {
@@ -355,6 +341,7 @@ window.onload = async function () {
     if (!(await checkToken())) return;
     await getMangaDetails();
     await getFinishedChapters();
+    await markChaptersOffline();
     await initializeFavoriteCheckbox();
     document.getElementById('toggle-read').addEventListener('change', async function () {
         if (this.checked) {

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulos descargados</title>
+    <link rel="stylesheet" href="../css/manga-detalle.css">
+    <link rel="icon" href="../img/logo.ico">
+</head>
+
+<body>
+
+    <!-- Logo que redirige a la sección Offline -->
+    <img id="home-button" src="../img/home.png" alt="Volver a Offline" onclick="window.location.href = 'offline.html';">
+
+    <h1 id="manga-title">Capítulos descargados</h1>
+
+    <!-- Sección de capítulos -->
+    <div id="chapters-list">
+        <h2>Capítulos</h2>
+        <!-- Aquí se inyectan dinámicamente los capítulos descargados -->
+    </div>
+
+    <script src="../js/offline-db.js"></script>
+    <script src="../js/offline-manga.js"></script>
+</body>
+
+</html>
