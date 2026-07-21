@@ -131,8 +131,28 @@
     font-size: 0.9rem;
   }
 
-  #image-size-control input[type="range"] {
+  #image-size-control select {
     flex: 1;
+    padding: 0.5rem;
+    font-size: var(--font-base);
+    border-radius: var(--radius);
+    border: 1px solid #ddd;
+  }
+
+  /* ================================
+     Modo de lectura paginado
+     ================================ */
+  .chapter-image-wrapper.page-hidden {
+    display: none;
+  }
+
+  /* Clic en la mitad derecha = página siguiente, izquierda = anterior;
+     también se puede deslizar (ver reading-mode.js) */
+  #chapter-images.paginated {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
   }
 
   /* ================================

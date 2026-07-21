@@ -22,9 +22,3 @@
 .tv-mode body {
   font-size: calc(var(--font-base, 1rem) * 1.3);
 }
-
-/* En TV se navega de imagen en imagen con el mando (ver tv-chapter-nav.js),
-   no tiene sentido ofrecer un control de tamaño pensado para ratón/táctil */
-.tv-mode #image-size-control {
-  display: none;
-}

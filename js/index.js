@@ -51,6 +51,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   });
 
+  document.getElementById('open-settings').addEventListener('click', e => {
+    e.preventDefault();
+    openSettingsModal();
+  });
+
   document.addEventListener('click', (e) => {
     if (!burger.contains(e.target) && !menu.contains(e.target)) {
       menu.style.display = 'none';
@@ -201,6 +206,72 @@ async function askForUser() {
     } catch (err) {
       console.error("Error creando usuario:", err);
     }
+  });
+}
+
+// --- Modal de Ajustes (tema y modo de lectura) ---
+function openSettingsModal() {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed", top: 0, left: 0,
+    width: "100%", height: "100%",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    display: "flex", justifyContent: "center",
+    alignItems: "center", zIndex: 1000
+  });
+
+  const currentTheme = getSetting('theme', 'light');
+  const currentMode = getReadingMode();
+
+  modal.innerHTML = `
+  <div style="
+    background:#333; color:#fff; padding:20px;
+    border-radius:8px; text-align:center; width:320px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.2);
+  ">
+    <h2 style="margin-bottom:20px; font-size:1.5rem;">Ajustes</h2>
+
+    <div style="text-align:left; margin-bottom:16px;">
+      <p style="margin-bottom:6px; font-weight:bold;">Tema</p>
+      <label style="display:block; margin-bottom:4px;">
+        <input type="radio" name="settings-theme" value="light" ${currentTheme === 'light' ? 'checked' : ''}> Claro
+      </label>
+      <label style="display:block;">
+        <input type="radio" name="settings-theme" value="dark" ${currentTheme === 'dark' ? 'checked' : ''}> Oscuro
+      </label>
+    </div>
+
+    <div style="text-align:left; margin-bottom:20px;">
+      <p style="margin-bottom:6px; font-weight:bold;">Modo de lectura</p>
+      <label style="display:block; margin-bottom:4px;">
+        <input type="radio" name="settings-reading-mode" value="scroll" ${currentMode === 'scroll' ? 'checked' : ''}> Scroll continuo
+      </label>
+      <label style="display:block;">
+        <input type="radio" name="settings-reading-mode" value="paginated" ${currentMode === 'paginated' ? 'checked' : ''}> Paginado (una imagen a la vez)
+      </label>
+    </div>
+
+    <button id="close-settings" style="padding:10px 20px; border:none; border-radius:4px; background-color:#007bff; color:#fff; font-size:1rem; cursor:pointer;">Cerrar</button>
+  </div>`;
+
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('input[name="settings-theme"]').forEach(input => {
+    input.addEventListener('change', () => {
+      setSetting('theme', input.value);
+      applyTheme(input.value);
+    });
+  });
+
+  modal.querySelectorAll('input[name="settings-reading-mode"]').forEach(input => {
+    input.addEventListener('change', () => {
+      setSetting('readingMode', input.value);
+    });
+  });
+
+  modal.querySelector('#close-settings').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
   });
 }
 

@@ -35,10 +35,10 @@ async function loadChapter() {
         chapter.chapterTitle || `Capítulo ${chapter.chapterNumber}: ${mangaTitle}`;
 
     const imagesContainer = document.getElementById('chapter-images');
-    imagesContainer.innerHTML = '';
-    chapter.pages.forEach((blob, i) => {
-        renderChapterImage(imagesContainer, URL.createObjectURL(blob), `Página ${i + 1}`);
-    });
+    renderChapterImages(imagesContainer, chapter.pages, (blob, i) => ({
+        src: URL.createObjectURL(blob),
+        alt: `Página ${i + 1}`
+    }));
 
     populateChapterSelector();
     showNavigationButtons();

@@ -1,0 +1,84 @@
+/* dark-theme.css
+   Tema oscuro compartido por todas las páginas. Todo bajo .dark-theme
+   (la clase la añade settings.js según localStorage.theme), así que si no
+   está presente (tema claro, por defecto) ninguna de estas reglas aplica.
+
+   La mayoría de la interfaz ya usa variables CSS (--color-bg, --color-card,
+   --color-text) así que redefinirlas aquí "repinta" gratis casi todo; el
+   resto de reglas cubren los sitios donde cada hoja de estilo usa colores
+   literales en vez de variables. No es un rediseño pixel a pixel, cubre la
+   interfaz principal con buen contraste. */
+
+.dark-theme {
+  --color-bg: #121212;
+  --color-card: #1e1e1e;
+  --color-text: #e0e0e0;
+}
+
+.dark-theme body {
+  background-color: #121212;
+}
+
+/* Header / menú hamburguesa (index.css usa colores literales, no variables) */
+.dark-theme .header {
+  background: #1e1e1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.dark-theme .burger span {
+  background: #e0e0e0;
+}
+
+.dark-theme .menu {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+.dark-theme .menu a {
+  color: #e0e0e0;
+}
+
+.dark-theme .menu a:hover {
+  background: #2a2a2a;
+}
+
+.dark-theme .has-submenu .submenu {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+/* Tarjetas de detalle / marcar-hasta (manga-detalle.css usa rgba literal) */
+.dark-theme #manga-details,
+.dark-theme .mark-up-to,
+.dark-theme #chapter-details {
+  background-color: rgba(30, 30, 30, 0.85);
+  color: #e0e0e0;
+}
+
+/* Modal de confirmación (manga-detalle.css) */
+.dark-theme .custom-modal-content {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+/* Aviso de imagen no cargada */
+.dark-theme .chapter-image-error {
+  background: rgba(30, 30, 30, 0.9);
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+/* Bolita/panel de descargas (download-manager.js inyecta su propio <style>;
+   necesita mayor especificidad para ganarle, no basta con el orden) */
+.dark-theme #download-panel {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.dark-theme #download-panel h4 {
+  color: #e0e0e0;
+}
+
+.dark-theme .download-item {
+  color: #e0e0e0;
+}

@@ -8,6 +8,22 @@ function renderChapterImage(container, src, altText) {
     wrapper.className = 'chapter-image-wrapper';
     mountChapterImage(wrapper, src, altText);
     container.appendChild(wrapper);
+    return wrapper;
+}
+
+// Renderiza todas las imágenes de un capítulo de una vez y aplica el modo de
+// lectura (scroll continuo o paginado, ver reading-mode.js) sobre el resultado.
+// mapFn(item, index) debe devolver { src, alt } para cada elemento de `items`.
+function renderChapterImages(container, items, mapFn) {
+    container.innerHTML = '';
+    const wrappers = items.map((item, i) => {
+        const { src, alt } = mapFn(item, i);
+        return renderChapterImage(container, src, alt);
+    });
+    if (typeof applyReadingModeToChapter === 'function') {
+        applyReadingModeToChapter(wrappers);
+    }
+    return wrappers;
 }
 
 function mountChapterImage(wrapper, src, altText) {

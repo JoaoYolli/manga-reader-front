@@ -77,10 +77,10 @@ async function getChapterDetails() {
     const chapData = await chapRes.json();
     if (chapData.images) {
         const imagesContainer = document.getElementById("chapter-images");
-        imagesContainer.innerHTML = "";
-        chapData.images.forEach(imgObj => {
-            renderChapterImage(imagesContainer, imgObj.url, imgObj.name || `Imagen capítulo ${currentChapter.num}`);
-        });
+        renderChapterImages(imagesContainer, chapData.images, imgObj => ({
+            src: imgObj.url,
+            alt: imgObj.name || `Imagen capítulo ${currentChapter.num}`
+        }));
     }
 
     populateChapterSelector();

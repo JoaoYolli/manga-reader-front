@@ -27,12 +27,18 @@ if (window.isTvMode) {
             // No interferir si el foco está en el selector de capítulo u otro control de formulario
             if (isFormControl(document.activeElement)) return;
 
-            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                goToImage(currentIndex + 1);
-            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                e.preventDefault();
-                goToImage(currentIndex - 1);
+            const isNext = e.key === 'ArrowDown' || e.key === 'ArrowRight';
+            const isPrev = e.key === 'ArrowUp' || e.key === 'ArrowLeft';
+            if (!isNext && !isPrev) return;
+
+            e.preventDefault();
+
+            // En modo de lectura paginado, las flechas pasan de página
+            // (ver reading-mode.js); en modo scroll, hacen scroll a la imagen.
+            if (typeof isPaginatedMode === 'function' && isPaginatedMode()) {
+                goToPage(isNext ? 1 : -1);
+            } else {
+                goToImage(currentIndex + (isNext ? 1 : -1));
             }
         });
 
