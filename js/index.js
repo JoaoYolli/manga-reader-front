@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const menu = document.getElementById('menu');
   const cerrarSesion = document.getElementById('cerrar-sesion');
 
+  if (window.isTvMode) makeTvFocusable(burger);
+
   if (savedUser) {
     currentUser = savedUser;
   } else {
@@ -286,6 +288,7 @@ function searchMangas(mangas, containerId, name) {
       card.addEventListener('click', () => {
         window.location.href = card.getAttribute('data-url');
       });
+      if (window.isTvMode) makeTvFocusable(card);
 
       const img = document.createElement('img');
       img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';
@@ -313,6 +316,7 @@ function searchMangasNormal(mangas, containerId) {
     card.addEventListener('click', () => {
       window.location.href = card.getAttribute('data-url');
     });
+    if (window.isTvMode) makeTvFocusable(card);
 
     const img = document.createElement('img');
     img.src = manga.thumbnail?.url || 'https://via.placeholder.com/150';

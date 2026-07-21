@@ -102,6 +102,7 @@ function ensureDownloadManagerUI() {
     downloadBallEl.addEventListener('click', () => {
         downloadPanelEl.style.display = downloadPanelEl.style.display === 'block' ? 'none' : 'block';
     });
+    if (window.isTvMode) makeTvFocusable(downloadBallEl);
 
     downloadPanelEl = document.createElement('div');
     downloadPanelEl.id = 'download-panel';

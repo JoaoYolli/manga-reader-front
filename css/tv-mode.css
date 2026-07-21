@@ -1,0 +1,30 @@
+/* tv-mode.css
+   Estilos compartidos por todas las páginas para el modo TV (mando/D-pad).
+   Todo queda bajo el selector .tv-mode, así que si esa clase no está presente
+   en <html> (dispositivo normal), ninguna de estas reglas aplica. */
+
+.tv-mode a:focus-visible,
+.tv-mode button:focus-visible,
+.tv-mode input:focus-visible,
+.tv-mode select:focus-visible,
+.tv-mode [tabindex]:focus-visible {
+  outline: 4px solid #ffd700;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px rgba(255, 215, 0, 0.35);
+  transform: scale(1.04);
+}
+
+.tv-mode .chapter:focus-within {
+  outline: 4px solid #ffd700;
+  outline-offset: 2px;
+}
+
+.tv-mode body {
+  font-size: calc(var(--font-base, 1rem) * 1.3);
+}
+
+/* En TV se navega de imagen en imagen con el mando (ver tv-chapter-nav.js),
+   no tiene sentido ofrecer un control de tamaño pensado para ratón/táctil */
+.tv-mode #image-size-control {
+  display: none;
+}

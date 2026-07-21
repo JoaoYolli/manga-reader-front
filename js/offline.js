@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.addEventListener('click', () => {
       window.location.href = `offline-manga.html?manga=${encodeURIComponent(manga.mangaTitle)}&cid=${encodeURIComponent(manga.cid)}`;
     });
+    if (window.isTvMode) makeTvFocusable(card);
 
     const img = document.createElement('img');
     img.src = manga.thumbnail ? URL.createObjectURL(manga.thumbnail) : 'https://via.placeholder.com/150';

@@ -234,8 +234,14 @@
   .has-submenu:hover .submenu {
     display: block;
   }
-  
+
   .has-submenu > a {
     cursor: pointer;
+  }
+
+  /* Modo TV: el submenú no se puede alcanzar con :hover (no hay puntero),
+     se abre/cierra pulsando Enter sobre el enlace (ver tv-mode.js) */
+  .tv-mode .has-submenu.tv-open .submenu {
+    display: block;
   }
 
