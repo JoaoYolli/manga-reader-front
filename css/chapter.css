@@ -100,6 +100,25 @@
     display: block;
   }
 
+  /* Aviso de imagen no cargada (reintentable) */
+  .chapter-image-error {
+    width: 100%;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+    margin-bottom: 0.625rem;
+    font-size: clamp(1.1rem, 4vw, 1.5rem);
+    font-weight: bold;
+    color: #c0392b;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px dashed #c0392b;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
   /* ================================
      Control de tamaño de imagen (tablet/escritorio)
      ================================ */

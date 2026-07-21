@@ -37,10 +37,7 @@ async function loadChapter() {
     const imagesContainer = document.getElementById('chapter-images');
     imagesContainer.innerHTML = '';
     chapter.pages.forEach((blob, i) => {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);
-        img.alt = `Página ${i + 1}`;
-        imagesContainer.appendChild(img);
+        renderChapterImage(imagesContainer, URL.createObjectURL(blob), `Página ${i + 1}`);
     });
 
     populateChapterSelector();

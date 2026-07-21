@@ -79,10 +79,7 @@ async function getChapterDetails() {
         const imagesContainer = document.getElementById("chapter-images");
         imagesContainer.innerHTML = "";
         chapData.images.forEach(imgObj => {
-            const img = document.createElement('img');
-            img.src = imgObj.url;
-            img.alt = imgObj.name || `Imagen capítulo ${currentChapter.num}`;
-            imagesContainer.appendChild(img);
+            renderChapterImage(imagesContainer, imgObj.url, imgObj.name || `Imagen capítulo ${currentChapter.num}`);
         });
     }
 
