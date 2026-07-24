@@ -21,7 +21,7 @@ function removeStoredItem(key) {
     localStorage.removeItem(key);
 }
 
-// --- Validar token mediante lista de usuarios ---
+// --- Validar token ---
 async function checkToken() {
     const token = getStoredItem("token");
     if (!token) {
@@ -31,7 +31,7 @@ async function checkToken() {
     currentToken = token;
 
     try {
-        const res = await fetch(back + "/list_users", {
+        const res = await fetch(back + "/validate_token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token })

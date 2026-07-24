@@ -16,7 +16,7 @@ function getUser() {
     return localStorage.getItem("user");
 }
 
-// --- Validar token mediante lista de usuarios ---
+// --- Validar token ---
 async function checkToken() {
     const token = getToken();
     if (!token) {
@@ -26,7 +26,7 @@ async function checkToken() {
     currentToken = token;
 
     try {
-        const res = await fetch(back + "/list_users", {
+        const res = await fetch(back + "/validate_token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token })

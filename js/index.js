@@ -1,8 +1,12 @@
-// Dirección del backend
-const back = "https://manga-back.yolli.xyz";
+// Estado de sesión
 let debounceTimer;
 let currentToken = null;
 let currentUser = null;
+
+function updateInviteMenuVisibility() {
+  document.getElementById('invite-menu-item').style.display =
+    localStorage.getItem('isAdmin') === 'true' ? 'block' : 'none';
+}
 
 // --- Comprobación de conectividad con el backend ---
 async function isBackendReachable() {
@@ -30,21 +34,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (window.isTvMode) makeTvFocusable(burger);
 
-  if (savedUser) {
-    currentUser = savedUser;
-  } else {
-    await askForUser();
-  }
-
-  cerrarSesion.addEventListener('click', async () => {
+  cerrarSesion.addEventListener('click', () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    if (!token || !(await validateToken(token))) {
-      await handleInvalidToken();
-      return;
-    }
-    currentToken = token;
-    await fetchFavorites();
+    localStorage.removeItem('isAdmin');
+    window.location.reload();
   });
 
   burger.addEventListener('click', () => {
@@ -56,30 +50,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     openSettingsModal();
   });
 
+  document.getElementById('open-invite').addEventListener('click', e => {
+    e.preventDefault();
+    showInviteCodeModal(currentToken);
+  });
+
   document.addEventListener('click', (e) => {
     if (!burger.contains(e.target) && !menu.contains(e.target)) {
       menu.style.display = 'none';
     }
   });
 
-  if (!token || !(await validateToken(token))) {
-    await handleInvalidToken();
+  if (token && (await validateToken(token))) {
+    currentToken = token;
+    currentUser = savedUser;
+    updateInviteMenuVisibility();
+    await fetchFavorites();
+    await askPermission();
     return;
   }
-  currentToken = token;
-  await fetchFavorites();
-  await askPermission();
+
+  login();
 });
+
+// --- Login: por QR en Smart TV, por usuario+contraseña en el resto ---
+function login() {
+  const onSuccess = async (data) => {
+    currentToken = data.token;
+    currentUser = data.username;
+    updateInviteMenuVisibility();
+    await fetchFavorites();
+    await askPermission();
+  };
+
+  if (window.isTvMode) {
+    showQrLoginScreen(onSuccess);
+  } else {
+    showLoginForm(onSuccess);
+  }
+}
 
 // --- Validación de token ---
 async function validateToken(token) {
   try {
-    const res = await fetch(back + "/list_users", {
+    const res = await fetch(back + "/validate_token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token })
     });
-    return res.status === 200;
+    if (res.status !== 200) return false;
+    const data = await res.json();
+    localStorage.setItem('isAdmin', data.isAdmin ? 'true' : 'false');
+    return true;
   } catch (err) {
     console.error("Error validando token:", err);
     return false;
@@ -111,102 +133,6 @@ async function fetchFavorites() {
   } catch (err) {
     console.error("Error al solicitar favoritos:", err);
   }
-}
-
-// --- Manejo de token inválido ---
-async function handleInvalidToken() {
-  let attempts = 3;
-  const pwdModal = createModal("Ingresa la contraseña");
-  document.body.appendChild(pwdModal);
-
-  const submitBtn = pwdModal.querySelector("#submit-password");
-  const pwdField = pwdModal.querySelector("#password-input");
-
-  submitBtn.addEventListener("click", async () => {
-    const password = pwdField.value;
-    try {
-      const res = await fetch(back + "/get_token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-      if (res.ok) {
-        const { token } = await res.json();
-        localStorage.setItem('token', token);
-        currentToken = token;
-        pwdModal.remove();
-
-        await askForUser();
-        await fetchFavorites();
-        await askPermission();
-      } else {
-        attempts--;
-        alert(`Contraseña incorrecta. Quedan ${attempts} intentos.`);
-        if (attempts <= 0) window.location.reload();
-      }
-    } catch (err) {
-      console.error("Error al obtener token:", err);
-    }
-  });
-}
-
-// --- Selección o creación de usuario ---
-async function askForUser() {
-  let users = [];
-  try {
-    const res = await fetch(back + "/list_users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: currentToken })
-    });
-    if (!res.ok) throw new Error(res.statusText);
-    const json = await res.json();
-    users = Array.isArray(json.users) ? json.users : [];
-  } catch (err) {
-    console.error("No se pudo cargar la lista de usuarios:", err);
-    alert("Error al obtener usuarios disponibles.");
-    return;
-  }
-
-  const userModal = createModal("Elige o crea tu usuario", users, true);
-  document.body.appendChild(userModal);
-
-  const select = userModal.querySelector("#user-select");
-  const submit = userModal.querySelector("#submit-user");
-  const createBtn = userModal.querySelector("#create-user");
-
-  submit.addEventListener("click", () => {
-    const sel = select.value;
-    if (!sel) return alert("Debes elegir un usuario.");
-    currentUser = sel;
-    localStorage.setItem('user', sel);
-    userModal.remove();
-    fetchFavorites();
-  });
-
-  createBtn.addEventListener("click", async () => {
-    const newUser = prompt("Ingresa el nombre del nuevo usuario:");
-    if (!newUser) return;
-    try {
-      const res = await fetch(back + "/create_user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: currentToken, username: newUser })
-      });
-      if (res.ok) {
-        currentUser = newUser;
-        localStorage.setItem('user', newUser);
-        userModal.remove();
-        await fetchFavorites();
-      } else if (res.status === 409) {
-        alert("Usuario ya existe, elige otro nombre.");
-      } else {
-        alert("Error al crear usuario.");
-      }
-    } catch (err) {
-      console.error("Error creando usuario:", err);
-    }
-  });
 }
 
 // --- Modal de Ajustes (tema y modo de lectura) ---
@@ -260,12 +186,14 @@ function openSettingsModal() {
     input.addEventListener('change', () => {
       setSetting('theme', input.value);
       applyTheme(input.value);
+      if (currentToken) apiSetPreferences(currentToken, { theme: input.value });
     });
   });
 
   modal.querySelectorAll('input[name="settings-reading-mode"]').forEach(input => {
     input.addEventListener('change', () => {
       setSetting('readingMode', input.value);
+      if (currentToken) apiSetPreferences(currentToken, { readingMode: input.value });
     });
   });
 
@@ -273,47 +201,6 @@ function openSettingsModal() {
   modal.addEventListener('click', e => {
     if (e.target === modal) modal.remove();
   });
-}
-
-// --- Crear modal genérico ---
-function createModal(title, options = null, allowCreate = false) {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0,
-    width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    display: "flex", justifyContent: "center",
-    alignItems: "center", zIndex: 1000
-  });
-
-  let inner = `
-  <div style="
-    background:#333; color:#fff; padding:20px;
-    border-radius:8px; text-align:center; width:300px;
-    box-shadow:0 4px 8px rgba(0,0,0,0.2);
-  ">
-    <h2 style="margin-bottom:20px; font-size:1.5rem;">${title}</h2>
-  `;
-
-  if (options) {
-    inner += `<select id="user-select" style="margin-bottom:10px; width:100%; padding:10px; border:none; border-radius:4px; font-size:1rem;">
-      <option value="">-- Selecciona usuario --</option>
-      ${options.map(u => `<option value="${u}">${u}</option>`).join("")}
-    </select>`;
-  }
-
-  if (options && allowCreate) {
-    inner += `<button id="create-user" style="margin-bottom:10px; padding:10px 20px; border:none; border-radius:4px; background-color:#28a745; color:#fff; font-size:1rem; cursor:pointer;">Crear usuario</button>`;
-  }
-
-  if (!options) {
-    inner += `<input type="password" id="password-input" placeholder="Contraseña" style="margin-bottom:20px; width:100%; padding:10px; border:none; border-radius:4px; font-size:1rem;" />`;
-  }
-
-  inner += `<button id="${options ? 'submit-user' : 'submit-password'}" style="padding:10px 20px; border:none; border-radius:4px; background-color:#007bff; color:#fff; font-size:1rem; cursor:pointer;">${options ? 'Seleccionar' : 'Enviar'}</button></div>`;
-
-  modal.innerHTML = inner;
-  return modal;
 }
 
 // --- Búsqueda de mangas ---
