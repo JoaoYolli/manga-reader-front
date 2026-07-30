@@ -2,7 +2,7 @@
 // Almacén IndexedDB para capítulos descargados y visibles en la sección Offline.
 
 const OFFLINE_DB_NAME = 'mangaReaderOfflineDB';
-const OFFLINE_DB_VERSION = 1;
+const OFFLINE_DB_VERSION = 2;
 
 let dbPromise = null;
 
@@ -22,6 +22,10 @@ function openOfflineDB() {
             if (!db.objectStoreNames.contains('chapters')) {
                 const chapters = db.createObjectStore('chapters', { keyPath: ['mangaTitle', 'chapterNumber'] });
                 chapters.createIndex('byManga', 'mangaTitle', { unique: false });
+            }
+
+            if (!db.objectStoreNames.contains('jobs')) {
+                db.createObjectStore('jobs', { keyPath: 'id' });
             }
         };
 
@@ -126,6 +130,25 @@ async function deleteOfflineManga(mangaTitle) {
     const chapterStore = tx(db, 'chapters', 'readwrite');
     await Promise.all(keys.map(key => requestToPromise(chapterStore.delete(key))));
     await requestToPromise(tx(db, 'mangas', 'readwrite').delete(mangaTitle));
+}
+
+// --- Jobs de descarga en curso (metadata para la capa Background Fetch;
+// Background Fetch solo expone id + progreso, no manga/capítulo, así que
+// este store es lo que permite reconstruir la UI en cualquier pestaña) ---
+
+async function saveDownloadJob(job) {
+    const db = await openOfflineDB();
+    await requestToPromise(tx(db, 'jobs', 'readwrite').put(job));
+}
+
+async function getDownloadJob(id) {
+    const db = await openOfflineDB();
+    return requestToPromise(tx(db, 'jobs', 'readonly').get(id));
+}
+
+async function deleteDownloadJob(id) {
+    const db = await openOfflineDB();
+    await requestToPromise(tx(db, 'jobs', 'readwrite').delete(id));
 }
 
 // --- Persistencia ---

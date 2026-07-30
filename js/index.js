@@ -19,12 +19,50 @@ async function isBackendReachable() {
   }
 }
 
+// --- Comprobación de disponibilidad de InManga (fuente de los mangas) ---
+// Distinto de isBackendReachable(): esto consulta el estado que el backend
+// ya mantiene (chequeo propio cada 10 min), no dispara una prueba nueva
+// contra InManga por cada carga de página. No bloquea el resto de la app —
+// login, biblioteca offline y ajustes siguen funcionando igual si está caída.
+async function checkMangaSourceStatus() {
+  try {
+    const res = await fetch(back + "/manga_source_status", { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.available === false) showMangaSourceBanner();
+  } catch (err) {
+    console.error("Error comprobando disponibilidad de InManga:", err);
+  }
+}
+
+function showMangaSourceBanner() {
+  if (document.getElementById('manga-source-banner')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'manga-source-banner';
+  banner.className = 'status-banner';
+
+  const text = document.createElement('span');
+  text.textContent = '⚠ InManga no está disponible temporalmente. La búsqueda y lectura pueden fallar hasta que vuelva.';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'status-banner-close';
+  closeBtn.setAttribute('aria-label', 'Cerrar aviso');
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('click', () => banner.remove());
+
+  banner.append(text, closeBtn);
+  document.body.prepend(banner);
+}
+
 // Al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
   if (!(await isBackendReachable())) {
     window.location.replace('pages/offline.html');
     return;
   }
+
+  checkMangaSourceStatus();
 
   const token = localStorage.getItem("token");
   const savedUser = localStorage.getItem("user");

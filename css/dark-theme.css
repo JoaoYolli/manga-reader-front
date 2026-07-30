@@ -82,3 +82,10 @@
 .dark-theme .download-item {
   color: #e0e0e0;
 }
+
+/* Aviso de disponibilidad de InManga (index.css usa colores literales) */
+.dark-theme .status-banner {
+  background: #4a3c10;
+  color: #ffe69c;
+  border-bottom-color: #664d03;
+}

@@ -115,13 +115,18 @@ function renderChapters(chapters, title, cid) {
         const btn = document.createElement('button');
         btn.textContent = 'A';
         btn.classList.add('download-btn');
+        // Se asocia el botón a su id de descarga siempre al renderizarlo, no
+        // solo al hacer click: si la descarga sigue en curso de una carga de
+        // página anterior, el botón nuevo tiene que poder recibir igual el
+        // aviso de 'download-complete' cuando termine.
+        chapterButtonsById.set(generateDownloadId(title, ch.num), btn);
         btn.addEventListener('click', async e => {
             e.preventDefault();
             if (btn.classList.contains('downloaded')) {
                 const overwrite = await showConfirmationModal('Este capítulo ya está descargado. ¿Quieres volver a descargarlo?');
                 if (!overwrite) return;
             }
-            downloadChapter(ch.num, title, cid, ch.name, `https://jimov-api.vercel.app${ch.url}`, btn);
+            downloadChapter(ch.num, title, cid, ch.name, `https://jimov-api.vercel.app${ch.url}`);
         });
 
         item.append(link, btn);
@@ -130,12 +135,25 @@ function renderChapters(chapters, title, cid) {
 }
 
 // --- Descargar capítulo para lectura offline ---
-async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url, btn) {
-    const proxy = back + "/proxy";
-    const download = createDownload(`${mangaTitle} - Cap. ${chapterNumber}`);
+// El fetch de las imágenes y el guardado en IndexedDB los hace el Service
+// Worker (o Background Fetch en Chromium/Android) vía download-manager.js,
+// no esta página — así la descarga sigue aunque se navegue a otra página de
+// la PWA. Aquí solo se arma la lista de imágenes y se marca el botón como
+// descargado cuando llega el aviso de finalización.
+const chapterButtonsById = new Map(); // downloadId -> <button>
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+        const data = event.data || {};
+        if (data.type !== 'download-complete') return;
+        const btn = chapterButtonsById.get(data.id);
+        if (btn) btn.classList.add('downloaded');
+    });
+}
+
+async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url) {
     try {
-        const res = await fetch(url, { signal: download.signal });
+        const res = await fetch(url);
         const data = await res.json();
         const images = data.images || [];
         if (!images.length) {
@@ -143,44 +161,19 @@ async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url
             return;
         }
 
-        const pages = [];
-        for (let i = 0; i < images.length; i++) {
-            pages.push(await fetchProxyImage(images[i].url, proxy, download.signal));
-            download.setProgress(Math.round(((i + 1) / images.length) * 100));
-        }
-
-        await saveChapterOffline({ mangaTitle, cid, chapterNumber, chapterTitle, pages });
-
         const mangaMeta = await getOfflineManga(mangaTitle);
-        if (!mangaMeta?.thumbnail && currentMangaThumbnailUrl) {
-            const thumbnail = await fetchProxyImage(currentMangaThumbnailUrl, proxy, download.signal);
-            await saveMangaMeta({ mangaTitle, cid, thumbnail });
-        } else {
-            await saveMangaMeta({ mangaTitle, cid });
-        }
+        const needsThumbnail = !mangaMeta?.thumbnail && currentMangaThumbnailUrl;
 
-        await requestPersistentStorage();
-
-        if (btn) btn.classList.add('downloaded');
+        await startChapterDownload({
+            mangaTitle, cid, chapterNumber, chapterTitle,
+            imageUrls: images.map(img => img.url),
+            thumbnailUrl: needsThumbnail ? currentMangaThumbnailUrl : null,
+            token: currentToken,
+            backendUrl: back
+        });
     } catch (err) {
-        if (err.name === 'AbortError') {
-            console.log('Descarga cancelada:', mangaTitle, chapterNumber);
-        } else {
-            console.error("Error descargando capítulo:", err);
-        }
-    } finally {
-        download.finish();
+        console.error("Error descargando capítulo:", err);
     }
-}
-
-async function fetchProxyImage(url, proxy, signal) {
-    const res = await fetch(proxy, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: currentToken, url }),
-        signal
-    });
-    return res.blob();
 }
 
 // --- Favoritos ---
