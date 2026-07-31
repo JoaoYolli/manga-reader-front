@@ -13,6 +13,23 @@ const SWIPE_THRESHOLD_PX = 50;
 let pageWrappers = [];
 let currentPage = 0;
 let touchStartX = null;
+let pageChangeCallback = null;
+
+// reading-progress.js se engancha aquí para guardar la página actual cada
+// vez que cambia, sin que reading-mode.js necesite saber nada de cómo (ni
+// de si) se persiste esa posición.
+function setPageChangeCallback(cb) {
+    pageChangeCallback = cb;
+}
+
+// Salta directamente a una página (a diferencia de goToPage, que se mueve
+// por delta). Usado por reading-progress.js para restaurar la posición
+// guardada al reabrir un capítulo.
+function setPage(n) {
+    if (!pageWrappers.length) return;
+    currentPage = Math.max(0, Math.min(n, pageWrappers.length - 1));
+    renderCurrentPage();
+}
 
 function applyReadingModeToChapter(wrappers) {
     pageWrappers = wrappers;
@@ -36,6 +53,7 @@ function renderCurrentPage() {
     pageWrappers.forEach((wrapper, i) => {
         wrapper.classList.toggle('page-hidden', i !== currentPage);
     });
+    if (pageChangeCallback) pageChangeCallback(currentPage, pageWrappers.length);
 }
 
 function goToPage(delta) {

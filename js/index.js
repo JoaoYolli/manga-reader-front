@@ -4,8 +4,9 @@ let currentToken = null;
 let currentUser = null;
 
 function updateInviteMenuVisibility() {
-  document.getElementById('invite-menu-item').style.display =
-    localStorage.getItem('isAdmin') === 'true' ? 'block' : 'none';
+  const display = localStorage.getItem('isAdmin') === 'true' ? 'block' : 'none';
+  document.getElementById('invite-menu-item').style.display = display;
+  document.getElementById('reset-password-menu-item').style.display = display;
 }
 
 // --- Comprobación de conectividad con el backend ---
@@ -93,6 +94,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     showInviteCodeModal(currentToken);
   });
 
+  document.getElementById('open-reset-password').addEventListener('click', e => {
+    e.preventDefault();
+    showResetPasswordModal(currentToken);
+  });
+
   document.addEventListener('click', (e) => {
     if (!burger.contains(e.target) && !menu.contains(e.target)) {
       menu.style.display = 'none';
@@ -176,46 +182,36 @@ async function fetchFavorites() {
 // --- Modal de Ajustes (tema y modo de lectura) ---
 function openSettingsModal() {
   const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0,
-    width: "100%", height: "100%",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    display: "flex", justifyContent: "center",
-    alignItems: "center", zIndex: 1000
-  });
+  modal.className = "modal-overlay";
 
   const currentTheme = getSetting('theme', 'light');
   const currentMode = getReadingMode();
 
   modal.innerHTML = `
-  <div style="
-    background:#333; color:#fff; padding:20px;
-    border-radius:8px; text-align:center; width:320px;
-    box-shadow:0 4px 8px rgba(0,0,0,0.2);
-  ">
-    <h2 style="margin-bottom:20px; font-size:1.5rem;">Ajustes</h2>
+  <div class="modal-card">
+    <h2>Ajustes</h2>
 
     <div style="text-align:left; margin-bottom:16px;">
-      <p style="margin-bottom:6px; font-weight:bold;">Tema</p>
-      <label style="display:block; margin-bottom:4px;">
+      <p class="mono" style="margin-bottom:6px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-ink-soft);">Tema</p>
+      <label style="display:block; margin-bottom:4px; cursor:pointer;">
         <input type="radio" name="settings-theme" value="light" ${currentTheme === 'light' ? 'checked' : ''}> Claro
       </label>
-      <label style="display:block;">
+      <label style="display:block; cursor:pointer;">
         <input type="radio" name="settings-theme" value="dark" ${currentTheme === 'dark' ? 'checked' : ''}> Oscuro
       </label>
     </div>
 
     <div style="text-align:left; margin-bottom:20px;">
-      <p style="margin-bottom:6px; font-weight:bold;">Modo de lectura</p>
-      <label style="display:block; margin-bottom:4px;">
+      <p class="mono" style="margin-bottom:6px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-ink-soft);">Modo de lectura</p>
+      <label style="display:block; margin-bottom:4px; cursor:pointer;">
         <input type="radio" name="settings-reading-mode" value="scroll" ${currentMode === 'scroll' ? 'checked' : ''}> Scroll continuo
       </label>
-      <label style="display:block;">
+      <label style="display:block; cursor:pointer;">
         <input type="radio" name="settings-reading-mode" value="paginated" ${currentMode === 'paginated' ? 'checked' : ''}> Paginado (una imagen a la vez)
       </label>
     </div>
 
-    <button id="close-settings" style="padding:10px 20px; border:none; border-radius:4px; background-color:#007bff; color:#fff; font-size:1rem; cursor:pointer;">Cerrar</button>
+    <button id="close-settings" class="btn-primary">Cerrar</button>
   </div>`;
 
   document.body.appendChild(modal);

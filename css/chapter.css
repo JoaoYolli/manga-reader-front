@@ -1,287 +1,327 @@
+/* chapter.css — lector (online y offline). Tokens y reset comunes viven en
+   base.css; aquí se sobreescribe --color-bg a un tono "sala oscura" propio
+   de esta página (el papel de las páginas del capítulo destaca más sobre un
+   fondo tenue, tanto en tema claro como oscuro). */
+
+:root {
+  --color-bg: #2b2620;
+  --card-max-width: 800px;
+}
+
+body {
+  background-color: var(--color-bg);
+  background-size: auto;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--gap);
+}
+
 /* ================================
-   Variables y Reset
+   Encabezado
    ================================ */
-   :root {
-    --color-bg: #666666;
-    --color-card: #ffffff;
-    --color-text: #333333;
-    --color-primary: #4a90e2;
-    --radius: 0.5rem;
-    --gap: 1rem;
-    --transition: 0.3s ease;
-    --font-base: 1rem; /* 16px */
-    --button-bg: #0066cc;
-    --button-hover-bg: #005bb5;
-    --card-max-width: 800px;
-  }
-  
-  * {
-    box-sizing: border-box;
-    margin: 0;
+header {
+  text-align: center;
+  margin-bottom: var(--gap);
+}
+
+header h1 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  color: #f2ead9;
+  margin-bottom: var(--gap);
+}
+
+/* ================================
+   Detalles del Capítulo
+   ================================ */
+#chapter-details {
+  background-color: var(--color-card);
+  padding: var(--gap);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  max-width: var(--card-max-width);
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* ================================
+   Selector de Capítulos
+   ================================ */
+#chapter-select {
+  width: 100%;
+  padding: 0.625rem;
+  margin-bottom: var(--gap);
+  font-family: var(--font-body);
+  font-size: var(--font-base);
+  color: var(--color-ink);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--color-border-strong);
+}
+
+/* ================================
+   Imágenes del Capítulo
+   ================================ */
+#chapter-images {
+  width: 100%;
+}
+
+#chapter-images img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 0.625rem;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: var(--radius);
+  display: block;
+}
+
+/* Aviso de imagen no cargada (reintentable) */
+.chapter-image-error {
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+  margin-bottom: 0.625rem;
+  font-family: var(--font-mono);
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  font-weight: 700;
+  color: var(--color-danger);
+  background: var(--color-bg-alt);
+  border: 2px dashed var(--color-danger);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* ================================
+   Control de tamaño de imagen (tablet/escritorio)
+   ================================ */
+#image-size-control {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: var(--gap);
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--color-ink-soft);
+}
+
+#image-size-control select {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--font-base);
+  color: var(--color-ink);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--color-border-strong);
+}
+
+/* ================================
+   Modo de lectura paginado
+   ================================ */
+.chapter-image-wrapper.page-hidden {
+  display: none;
+}
+
+#chapter-images.paginated {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+/* ================================
+   Aviso de "retomado en la página X" (reading-progress.js)
+   ================================ */
+.resume-toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius);
+  box-shadow: 3px 3px 0 var(--color-accent);
+  z-index: 1500;
+  opacity: 0;
+  transition: transform 260ms ease, opacity 260ms ease;
+  pointer-events: none;
+}
+
+.resume-toast.visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+/* ================================
+   Navegación entre Capítulos
+   ================================ */
+#navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: var(--gap);
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+#navigation-buttons button {
+  flex: 1 1 calc(50% - var(--gap));
+  padding: 0.7rem 1.25rem;
+  font-size: var(--font-base);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--stamp-shadow-accent);
+}
+
+#navigation-buttons button:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+#navigation-buttons button:active {
+  box-shadow: 0 0 0 var(--color-accent-hover);
+}
+
+/* ================================
+   Título del Capítulo
+   ================================ */
+.chapter-title {
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  color: var(--color-ink);
+  margin-bottom: var(--gap);
+  text-align: center;
+}
+
+/* ================================
+   Logo / botón "volver al manga" fijo
+   ================================ */
+#logo {
+  position: fixed;
+  top: 1vh;
+  left: 1vw;
+  width: clamp(2rem, 5vw, 3rem);
+  cursor: pointer;
+  z-index: 1000;
+  border-radius: 50%;
+  background: var(--color-card);
+  border: 2px solid var(--color-ink);
+  padding: 0.3rem;
+  box-shadow: var(--stamp-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+#logo:hover {
+  border-color: var(--color-accent);
+}
+
+#logo:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+/* ================================
+   Botón Home Fijo
+   ================================ */
+#home-button {
+  position: fixed;
+  bottom: 2vh;
+  right: 2vw;
+  background-color: var(--color-card);
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  width: clamp(2.5rem, 6vw, 4rem);
+  height: clamp(2.5rem, 6vw, 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--stamp-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  z-index: 1000;
+}
+
+#home-button img {
+  width: clamp(1.25rem, 4vw, 2rem);
+  height: auto;
+}
+
+#home-button:hover {
+  border-color: var(--color-accent);
+}
+
+#home-button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+/* ================================
+   Media Queries
+   ================================ */
+
+/* Móvil: las imágenes ocupan todo el ancho de pantalla disponible */
+@media (max-width: 600px) {
+  body {
     padding: 0;
   }
-  
-  /* ================================
-     Estilo Global
-     ================================ */
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: var(--font-base);
-    background-color: var(--color-bg);
-    background-size: auto;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    color: var(--color-text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: var(--gap);
-  }
-  
-  /* ================================
-     Encabezado
-     ================================ */
+
   header {
-    text-align: center;
-    margin-bottom: var(--gap);
+    padding: var(--gap) var(--gap) 0;
   }
-  
-  h1 {
-    font-size: clamp(1.5rem, 5vw, 2rem);
-    color: #ffffff;
-    margin-bottom: var(--gap);
-  }
-  
-  /* ================================
-     Detalles del Capítulo
-     ================================ */
+
   #chapter-details {
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: var(--gap);
-    border-radius: var(--radius);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: var(--card-max-width);
-    width: 100%;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    padding: var(--gap) 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
+    max-width: 100%;
   }
-  
-  /* ================================
-     Selector de Capítulos
-     ================================ */
-  #chapter-select {
-    width: 100%;
-    padding: 0.625rem;
-    margin-bottom: var(--gap);
-    font-size: var(--font-base);
-    border-radius: var(--radius);
-    border: 1px solid #ddd;
-  }
-  
-  /* ================================
-     Imágenes del Capítulo
-     ================================ */
-  #chapter-images {
-    width: 100%;
+
+  #chapter-select,
+  .chapter-title,
+  #navigation-buttons {
+    margin-left: var(--gap);
+    margin-right: var(--gap);
+    width: calc(100% - 2 * var(--gap));
   }
 
   #chapter-images img {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    margin-bottom: 0.625rem;
-    margin-left: auto;
-    margin-right: auto;
-    border-radius: var(--radius);
-    display: block;
+    border-radius: 0;
   }
 
-  /* Aviso de imagen no cargada (reintentable) */
-  .chapter-image-error {
-    width: 100%;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 1.5rem;
-    margin-bottom: 0.625rem;
-    font-size: clamp(1.1rem, 4vw, 1.5rem);
-    font-weight: bold;
-    color: #c0392b;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px dashed #c0392b;
-    border-radius: var(--radius);
-    cursor: pointer;
-  }
-
-  /* ================================
-     Control de tamaño de imagen (tablet/escritorio)
-     ================================ */
-  #image-size-control {
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    margin-bottom: var(--gap);
-    font-size: 0.9rem;
-  }
-
-  #image-size-control select {
-    flex: 1;
-    padding: 0.5rem;
-    font-size: var(--font-base);
-    border-radius: var(--radius);
-    border: 1px solid #ddd;
-  }
-
-  /* ================================
-     Modo de lectura paginado
-     ================================ */
-  .chapter-image-wrapper.page-hidden {
-    display: none;
-  }
-
-  /* Clic en la mitad derecha = página siguiente, izquierda = anterior;
-     también se puede deslizar (ver reading-mode.js) */
-  #chapter-images.paginated {
-    cursor: pointer;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: pan-y;
-  }
-
-  /* ================================
-     Navegación entre Capítulos
-     ================================ */
-  #navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-top: var(--gap);
-    flex-wrap: wrap;
-    gap: var(--gap);
-  }
-  
   #navigation-buttons button {
-    flex: 1 1 calc(50% - var(--gap));
-    padding: 0.625rem 1.25rem;
-    font-size: var(--font-base);
-    border: none;
-    background-color: var(--button-bg);
-    color: white;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background-color var(--transition);
+    flex: 1 1 100%;
   }
-  
-  #navigation-buttons button:hover {
-    background-color: var(--button-hover-bg);
-  }
-  
-  /* ================================
-     Título del Capítulo
-     ================================ */
-  .chapter-title {
-    font-size: clamp(1.75rem, 5vw, 2.25rem);
-    font-weight: bold;
-    color: var(--color-text);
-    margin-bottom: var(--gap);
-    text-align: center;
-  }
-  
-  /* ================================
-     Logo Fijo
-     ================================ */
-  #logo {
-    position: fixed;
-    top: 1vh;
-    left: 1vw;
-    width: clamp(2rem, 5vw, 3rem);
-    cursor: pointer;
-    z-index: 1000;
-  }
-  
-  /* ================================
-     Botón Home Fijo
-     ================================ */
-  #home-button {
-    position: fixed;
-    bottom: 2vh;
-    right: 2vw;
-    background-color: var(--color-card);
-    border: 2px solid var(--color-text);
-    border-radius: 50%;
-    width: clamp(2.5rem, 6vw, 4rem);
-    height: clamp(2.5rem, 6vw, 4rem);
+}
+
+/* Tablet/escritorio: se puede ajustar el tamaño de las imágenes */
+@media (min-width: 601px) {
+  #image-size-control {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: background-color var(--transition);
-    z-index: 1000;
-  }
-  
-  #home-button img {
-    width: clamp(1.25rem, 4vw, 2rem);
-    height: auto;
-  }
-  
-  #home-button:hover {
-    background-color: #f0f0f0;
-  }
-  
-  /* ================================
-     Media Queries
-     ================================ */
-
-  /* Móvil: las imágenes ocupan todo el ancho de pantalla disponible */
-  @media (max-width: 600px) {
-    body {
-      padding: 0;
-    }
-
-    header {
-      padding: var(--gap) var(--gap) 0;
-    }
-
-    #chapter-details {
-      padding: var(--gap) 0;
-      border-radius: 0;
-      box-shadow: none;
-      background-color: transparent;
-      max-width: 100%;
-    }
-
-    #chapter-select,
-    .chapter-title,
-    #navigation-buttons {
-      margin-left: var(--gap);
-      margin-right: var(--gap);
-      width: calc(100% - 2 * var(--gap));
-    }
-
-    #chapter-images img {
-      border-radius: 0;
-    }
-
-    #navigation-buttons button {
-      flex: 1 1 100%;
-    }
   }
 
-  /* Tablet/escritorio: se puede ajustar el tamaño de las imágenes */
-  @media (min-width: 601px) {
-    #image-size-control {
-      display: flex;
-    }
-
-    #chapter-images img {
-      width: var(--reader-img-scale, 100%);
-    }
+  #chapter-images img {
+    width: var(--reader-img-scale, 100%);
   }
+}

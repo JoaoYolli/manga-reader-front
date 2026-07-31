@@ -1,0 +1,359 @@
+/* base.css
+   Fundamento visual compartido por las 9 páginas: tokens de color/tipografía
+   ("papel y tinta" — papel cálido, tinta casi negra, un único acento
+   bermellón usado con cuentagotas), reset, y componentes comunes (botones,
+   tarjetas, modales, iconos). Se enlaza ANTES del CSS propio de cada página,
+   así que cualquier regla de aquí puede sobreescribirse localmente si hace
+   falta. dark-theme.css se enlaza el último y redefine estos mismos tokens
+   bajo .dark-theme.
+*/
+
+:root {
+  /* Superficie */
+  --color-bg: #f5efe0;
+  --color-bg-alt: #ece2c9;
+  --color-card: #fbf7ec;
+  --color-ink: #211d16;
+  --color-ink-soft: #6b6151;
+  --color-border: #ddd0ab;
+  --color-border-strong: #c2b184;
+
+  /* Acento (un único color vivo, uso puntual) */
+  --color-accent: #b8442f;
+  --color-accent-hover: #9c3623;
+  --color-accent-soft: #f1ded2;
+  --color-danger: #a53228;
+  --color-success: #4b6b3f;
+
+  /* Alias de compatibilidad con variables ya usadas en el CSS existente */
+  --color-text: var(--color-ink);
+  --color-primary: var(--color-accent);
+  --button-bg: var(--color-accent);
+  --button-hover-bg: var(--color-accent-hover);
+
+  --radius: 3px;
+  --radius-lg: 7px;
+  --gap: 1rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-5: 1.5rem;
+  --space-8: 2.5rem;
+
+  --transition: 180ms cubic-bezier(.4,0,.2,1);
+  --transition-fast: 110ms cubic-bezier(.4,0,.2,1);
+
+  --font-base: 1rem;
+  --font-scale: 1.2;
+  --font-display: "Zilla Slab", Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --card-min-width: 150px;
+  --card-max-width: 220px;
+
+  /* Sombra "sello": desplazada y dura, no difuminada — se aplasta a 0 al
+     pulsar, dando sensación de tarjeta/botón de papel físico en vez del
+     halo difuso genérico. */
+  --stamp-shadow: 3px 3px 0 var(--color-border-strong);
+  --stamp-shadow-accent: 3px 3px 0 var(--color-accent-hover);
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Tipografía base ───────────────────────────────────────────────── */
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-base);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+h1 { font-size: calc(var(--font-base) * 1.9); letter-spacing: -0.01em; }
+h2 { font-size: calc(var(--font-base) * 1.3); }
+h3 { font-size: calc(var(--font-base) * 1.05); }
+
+a {
+  color: var(--color-accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-accent);
+}
+
+/* Números de capítulo, etiquetas, metadatos: siempre monoespaciada —
+   es el acento tipográfico que sustituye a los iconos/emoji genéricos. */
+.mono, .chip {
+  font-family: var(--font-mono);
+}
+
+.chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.15em 0.5em;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  line-height: 1.5;
+}
+
+/* Divisor de texto tipo ASCII, para separar secciones sin usar una línea
+   genérica de <hr>. Uso puntual, no en todas partes. */
+.ascii-divider {
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--color-border-strong);
+  letter-spacing: 0.4em;
+  font-size: 0.8rem;
+  margin: var(--space-3) 0;
+  user-select: none;
+}
+.ascii-divider::before {
+  content: "· · · · · · · · · · · ·";
+}
+
+/* ─── Botones ────────────────────────────────────────────────────────
+   Sistema global: TODO <button> hereda este aspecto salvo que se pida lo
+   contrario explícitamente (.btn-ghost). Sombra "sello" que se aplasta al
+   pulsar en vez de una transición de color sutil — el usuario pidió que
+   los botones "parezcan botones" y den feedback real al click. */
+button, .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  font-family: var(--font-body);
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  padding: 0.6em 1.1em;
+  cursor: pointer;
+  box-shadow: var(--stamp-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+              border-color var(--transition-fast), color var(--transition-fast),
+              background-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+button:hover, .btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+button:active, .btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+button:focus-visible, .btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+button:disabled, .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--stamp-shadow-accent);
+}
+.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); color: #fff; }
+.btn-primary:active { box-shadow: 0 0 0 var(--color-accent-hover); }
+
+.btn-ghost {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+.btn-ghost:hover { border-color: var(--color-border-strong); background: var(--color-bg-alt); }
+.btn-ghost:active { box-shadow: none; transform: scale(0.92); }
+
+.btn-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  flex: none;
+}
+
+.btn-sm {
+  font-size: 0.85rem;
+  padding: 0.4em 0.8em;
+}
+
+/* ─── Iconos (máscara CSS, heredan currentColor — nada de emoji) ──────── */
+.icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  flex: none;
+}
+
+.icon-download {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zM5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zM5 19a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z'/%3E%3C/svg%3E");
+}
+
+.icon-check {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.2 4.8 12l-1.4 1.4L9 19 20.6 7.4 19.2 6z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.2 4.8 12l-1.4 1.4L9 19 20.6 7.4 19.2 6z'/%3E%3C/svg%3E");
+}
+
+.icon-trash {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm-1 4h8v12H8V7zm2 2a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0v-6a1 1 0 0 0-1-1zm4 0a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0v-6a1 1 0 0 0-1-1z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm-1 4h8v12H8V7zm2 2a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0v-6a1 1 0 0 0-1-1zm4 0a1 1 0 0 0-1 1v6a1 1 0 1 0 2 0v-6a1 1 0 0 0-1-1z'/%3E%3C/svg%3E");
+}
+
+.icon-close {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z'/%3E%3C/svg%3E");
+}
+
+/* ─── Tarjeta base ──────────────────────────────────────────────────── */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition), transform var(--transition);
+  position: relative;
+}
+
+/* Marco de esquinas tipo visor, aparece al pasar el ratón/enfocar en vez
+   de un halo de sombra genérico. */
+.corner-frame { position: relative; }
+.corner-frame::before,
+.corner-frame::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--color-accent);
+  opacity: 0;
+  transition: opacity var(--transition), transform var(--transition);
+  pointer-events: none;
+}
+.corner-frame::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid; border-left: 2px solid;
+  transform: translate(5px, 5px);
+}
+.corner-frame::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid; border-right: 2px solid;
+  transform: translate(-5px, -5px);
+}
+.corner-frame:hover::before, .corner-frame:hover::after,
+.corner-frame:focus-within::before, .corner-frame:focus-within::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Modales ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(33, 29, 22, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-3);
+}
+
+.modal-card {
+  background: var(--color-card);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 5px 5px 0 var(--color-border-strong);
+  padding: var(--space-5);
+  width: min(360px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.modal-card h2 {
+  font-size: calc(var(--font-base) * 1.4);
+  margin-bottom: var(--space-3);
+}
+
+.modal-card p {
+  margin-bottom: var(--space-3);
+  color: var(--color-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.modal-card input[type="text"],
+.modal-card input[type="password"],
+.modal-card input[type="number"] {
+  display: block;
+  width: 100%;
+  padding: 0.65em 0.8em;
+  margin-bottom: var(--space-2);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color var(--transition-fast);
+}
+.modal-card input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.modal-card button, .modal-card .btn {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.modal-card a { color: var(--color-accent); }
+
+.modal-error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-2);
+  display: none;
+}
+.modal-error.visible { display: block; }
+
+.modal-code {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin-bottom: var(--space-2);
+}

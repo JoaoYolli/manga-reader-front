@@ -72,16 +72,24 @@ async function listOfflineMangas() {
     const db = await openOfflineDB();
     const mangas = await requestToPromise(tx(db, 'mangas', 'readonly').getAll());
 
-    const withCounts = await Promise.all(mangas.map(async manga => {
-        const index = tx(db, 'chapters', 'readonly').index('byManga');
-        const chapterCount = await requestToPromise(index.count(IDBKeyRange.only(manga.mangaTitle)));
-        return { ...manga, chapterCount };
+    // Reutiliza listOfflineChapters (no listOfflineChapters+count por separado)
+    // para que el tamaño en bytes de cada manga salga del mismo cálculo — y
+    // del mismo relleno automático para capítulos descargados antes de que
+    // existiera sizeBytes — que ya usa la sección offline-manga.html.
+    const withStats = await Promise.all(mangas.map(async manga => {
+        const chapters = await listOfflineChapters(manga.mangaTitle);
+        const sizeBytes = chapters.reduce((sum, ch) => sum + (ch.sizeBytes || 0), 0);
+        return { ...manga, chapterCount: chapters.length, sizeBytes };
     }));
 
-    return withCounts.filter(m => m.chapterCount > 0);
+    return withStats.filter(m => m.chapterCount > 0);
 }
 
 // --- Capítulos ---
+
+function chapterPagesSizeBytes(pages) {
+    return (pages || []).reduce((sum, blob) => sum + (blob?.size || 0), 0);
+}
 
 async function saveChapterOffline({ mangaTitle, cid, chapterNumber, chapterTitle, pages }) {
     const db = await openOfflineDB();
@@ -92,6 +100,7 @@ async function saveChapterOffline({ mangaTitle, cid, chapterNumber, chapterTitle
         chapterTitle,
         downloadedAt: Date.now(),
         pageCount: pages.length,
+        sizeBytes: chapterPagesSizeBytes(pages),
         pages
     };
     await requestToPromise(tx(db, 'chapters', 'readwrite').put(record));
@@ -112,9 +121,25 @@ async function listOfflineChapters(mangaTitle) {
     const db = await openOfflineDB();
     const index = tx(db, 'chapters', 'readonly').index('byManga');
     const chapters = await requestToPromise(index.getAll(IDBKeyRange.only(mangaTitle)));
-    return chapters
-        .map(({ pages, ...rest }) => rest)
-        .sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+    // Capítulos descargados antes de que se empezara a guardar sizeBytes no
+    // lo tienen todavía: se calcula aquí a partir de sus blobs (ya están en
+    // memoria, getAll() los trae igual) y se rellena una sola vez para no
+    // tener que recalcularlo cada vez que se abra esta lista.
+    const toBackfill = [];
+    const results = chapters.map(({ pages, ...rest }) => {
+        if (typeof rest.sizeBytes === 'number') return rest;
+        const sizeBytes = chapterPagesSizeBytes(pages);
+        toBackfill.push({ ...rest, pages, sizeBytes });
+        return { ...rest, sizeBytes };
+    });
+
+    if (toBackfill.length) {
+        const writeStore = tx(db, 'chapters', 'readwrite');
+        await Promise.all(toBackfill.map(record => requestToPromise(writeStore.put(record))));
+    }
+
+    return results.sort((a, b) => a.chapterNumber - b.chapterNumber);
 }
 
 async function deleteOfflineChapter(mangaTitle, chapterNumber) {
@@ -149,6 +174,20 @@ async function getDownloadJob(id) {
 async function deleteDownloadJob(id) {
     const db = await openOfflineDB();
     await requestToPromise(tx(db, 'jobs', 'readwrite').delete(id));
+}
+
+// --- Formato ---
+
+function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 // --- Persistencia ---

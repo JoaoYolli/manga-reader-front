@@ -81,6 +81,9 @@ async function getChapterDetails() {
             src: imgObj.url,
             alt: imgObj.name || `Imagen capítulo ${currentChapter.num}`
         }));
+        if (typeof initReadingProgress === 'function') {
+            initReadingProgress(mangaTitle, currentChapter.num);
+        }
     }
 
     populateChapterSelector();

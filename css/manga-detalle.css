@@ -1,303 +1,422 @@
-/* Variables para colores, espaciados y tamaños */
-:root {
-    --color-bg: #f0f2f5;
-    --color-card: #ffffff;
-    --color-text: #333333;
-    --color-primary: #4a90e2;
-    --radius: 0.5rem;
-    --gap: 1rem;
-    --transition: 0.3s ease;
-    --font-base: 1rem;           /* 16px */
-    --card-min-width: 150px;
-    --card-max-width: 220px;
-  }
-  
-  /* Reset básico */
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Body con background que cubre sin estirarse */
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: var(--font-base);
-    background-color: #666666;               /* fallback color */
-    /* background-image: url("../img/imagen.jpg"); */
-    background-size: auto;                   /* cubre sin deformar */
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    color: var(--color-text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* Cabeceras */
-  h1, h2 {
-    text-align: center;
-    color: var(--color-primary);
-    margin: var(--gap) 0;
-  }
-  
-  h1 {
-    font-size: calc(var(--font-base) * 1.5);
-  }
-  
-  h2 {
-    font-size: calc(var(--font-base) * 1.25);
-  }
-  
-  /* Contenedor de detalles de manga */
-  #manga-details {
-    width: 90%;
-    max-width: 800px;
-    margin: var(--gap) auto 0;
-    background: rgba(255,255,255,0.8);
-    padding: 1rem;
-    border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  /* Título del manga */
-  #manga-title {
-    font-size: calc(var(--font-base) * 1.75);
-    font-weight: bold;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-  
-  /* Lista de capítulos */
+/* manga-detalle.css — ficha de manga y lista de capítulos (también reusado
+   por offline-manga.html). Tokens y reset comunes viven en base.css. */
+
+body {
+  background-color: var(--color-bg-alt);
+  background-size: auto;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2 {
+  text-align: center;
+  margin: var(--gap) 0;
+}
+
+/* Contenedor de detalles de manga */
+#manga-details {
+  width: 90%;
+  max-width: 800px;
+  margin: var(--gap) auto 0;
+  background: rgba(251, 247, 236, 0.92);
+  color: var(--color-ink);
+  padding: var(--space-3) var(--gap);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+#manga-title {
+  font-size: calc(var(--font-base) * 1.9);
+  text-align: center;
+  margin-bottom: var(--gap);
+}
+
+/* Lista de capítulos */
+#chapters-list {
+  display: grid;
+  gap: var(--gap);
+  margin: var(--gap) auto 0;
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), var(--card-max-width)));
+  justify-content: center;
+  justify-items: center;
+  width: 90%;
+  max-width: 1200px;
+  padding-bottom: 5rem; /* deja sitio a la barra flotante de selección */
+}
+
+#chapters-list h2 {
+  grid-column: 1 / -1;
+}
+
+/* Cada capítulo */
+.chapter {
+  position: relative;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--gap);
+  width: 100%;
+  max-width: var(--card-max-width);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  transition: border-color var(--transition), transform var(--transition), background-color var(--transition);
+  -webkit-touch-callout: none; /* evita el menú contextual de iOS en la pulsación larga */
+  touch-action: manipulation;
+}
+
+.chapter:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-2px);
+}
+
+.chapter a {
+  text-decoration: none;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(var(--font-base) * 1.15);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.chapter a:hover {
+  color: var(--color-accent);
+}
+
+/* Número de capítulo: chip de ancho fijo que nunca se trunca ni se aplasta,
+   separado del título — así el número siempre es legible aunque el título
+   sea larguísimo o el nombre que devuelva la API no incluya el número. */
+.chapter-num-chip {
+  flex: none;
+  font-size: 0.68rem;
+}
+
+/* El título es lo único que se trunca con "…" cuando no cabe. */
+.chapter-title-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tamaño de un capítulo descargado (offline-manga.html) */
+.chapter-size {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+
+/* Feedback de "cargando" pulsación larga: se anima exactamente los mismos
+   500ms que el temporizador de selección múltiple en manga-detalle.js, así
+   el relleno termina justo cuando se activa el modo selección. */
+@keyframes chapter-press-charge {
+  from { box-shadow: inset 0 0 0 0 var(--color-accent-soft); }
+  to   { box-shadow: inset 0 0 0 2rem var(--color-accent-soft); }
+}
+.chapter.pressing {
+  animation: chapter-press-charge 500ms linear forwards;
+}
+
+/* Modo selección múltiple (long-press) */
+#chapters-list.selection-mode .chapter {
+  cursor: pointer;
+}
+
+.chapter.selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.chapter.selected::after {
+  content: "✓";
+  position: absolute;
+  top: -0.55rem;
+  left: -0.55rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--color-card);
+}
+
+/* Estado "Leído": un sello de esquina en vez de texto rojo */
+.chapter.read {
+  opacity: 0.78;
+}
+
+.chapter.read a {
+  color: var(--color-ink-soft);
+}
+
+/* text-decoration en el <a> no cruza a sus hijos flex (el chip y el
+   título) — se aplica directamente sobre el texto del título, así el chip
+   del número no queda tachado (sigue siendo legible de un vistazo). */
+.chapter.read .chapter-title-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-border-strong);
+}
+
+.chapter.read::before {
+  content: "LEÍDO";
+  position: absolute;
+  top: 0.5rem;
+  right: -0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  border: 1.5px solid var(--color-accent);
+  border-radius: 2px;
+  padding: 0.1em 0.4em;
+  background: var(--color-card);
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+/* Marcador de favorito */
+#favorite-checkbox-container {
+  position: fixed;
+  top: var(--gap);
+  right: var(--gap);
+  z-index: 200;
+}
+
+#favorite-checkbox {
+  display: none;
+}
+
+#favorite-checkbox-label {
+  font-size: calc(var(--font-base) * 2);
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  display: inline-block;
+  line-height: 1;
+  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.15));
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+#favorite-checkbox-label:active {
+  transform: scale(0.8);
+}
+
+#favorite-checkbox:checked + #favorite-checkbox-label {
+  color: #c9971f;
+}
+
+/* Botón Home */
+#home-button {
+  position: fixed;
+  bottom: 2vh;
+  right: 2vw;
+  width: clamp(2.5rem, 6vw, 4rem);
+  height: clamp(2.5rem, 6vw, 4rem);
+  background: var(--color-card);
+  border: 2px solid var(--color-ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--stamp-shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  z-index: 500;
+}
+
+#home-button:hover {
+  border-color: var(--color-accent);
+}
+
+#home-button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+#home-button img {
+  width: clamp(1.25rem, 4vw, 2rem);
+  height: auto;
+}
+
+/* Botones de descarga / borrado — iconos reales (base.css), no emoji */
+.download-btn,
+.delete-btn {
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--stamp-shadow);
+  cursor: pointer;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.download-btn:hover,
+.delete-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.download-btn:active,
+.delete-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+.delete-btn:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.download-btn .icon-check {
+  display: none;
+}
+
+.download-btn.downloaded {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.download-btn.downloaded .icon-download {
+  display: none;
+}
+
+.download-btn.downloaded .icon-check {
+  display: block;
+}
+
+/* ================================
+   Marcar leído hasta (separado)
+   ================================ */
+.mark-up-to {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  clear: both;
+  margin: calc(var(--gap) * 2) auto 0;
+  padding: var(--space-3) var(--gap);
+  max-width: 800px;
+  gap: var(--space-2);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.mark-up-to label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-soft);
+}
+
+.mark-up-to input[type="number"] {
+  width: 4rem;
+  padding: 0.5rem;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  transition: border-color var(--transition-fast);
+}
+
+.mark-up-to input[type="number"]:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+#mark-up-to-btn {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--stamp-shadow-accent);
+}
+
+#mark-up-to-btn:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+#mark-up-to-btn:active {
+  box-shadow: 0 0 0 var(--color-accent-hover);
+}
+
+/* ================================
+   Barra flotante de selección múltiple
+   ================================ */
+.selection-toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: calc(100vw - 2rem);
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-radius: var(--radius-lg);
+  padding: 0.6rem 0.9rem;
+  box-shadow: 4px 4px 0 var(--color-accent);
+  z-index: 900;
+}
+
+.selection-toolbar-count {
+  font-size: 0.8rem;
+  padding-left: 0.3rem;
+}
+
+.selection-toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.selection-toolbar button {
+  background: var(--color-card);
+  color: var(--color-ink);
+}
+
+/* Media Queries */
+@media (min-width: 600px) {
+  h1 { font-size: calc(var(--font-base) * 1.75); }
+  h2 { font-size: calc(var(--font-base) * 1.5); }
+  .chapter a { font-size: calc(var(--font-base) * 1.25); }
+}
+
+@media (min-width: 992px) {
+  #manga-details { flex-direction: row; }
+}
+
+@media (min-width: 1200px) {
   #chapters-list {
-    display: grid;
-    gap: var(--gap);
-    margin: var(--gap) auto 0;
-    grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), var(--card-max-width)));
-    justify-content: center;
-    justify-items: center;
-    width: 90%;
-    max-width: 1200px;
+    grid-template-columns: repeat(5, 1fr);
   }
-  
-  /* Cada capítulo */
-  .chapter {
-    background: var(--color-card);
-    border-radius: var(--radius);
-    padding: 0.75rem 1rem;
-    width: 100%;
-    max-width: var(--card-max-width);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: background-color var(--transition), transform var(--transition);
-  }
-  
-  .chapter:hover {
-    background-color: rgba(190, 155, 255, 0.2);
-    transform: translateY(-2px);
-  }
-  
-  .chapter a {
-    text-decoration: none;
-    color: var(--color-text);
-    font-weight: bold;
-    font-size: calc(var(--font-base) * 1.125);
-  }
-  
-  .chapter a:hover {
-    text-decoration: underline;
-  }
-  
-  /* Estado “Leído” */
-  .read a {
-    color: #ff0000;
-  }
-  
-  /* Marcador de favorito */
-  #favorite-checkbox-container {
-    position: fixed;
-    top: var(--gap);
-    right: var(--gap);
-  }
-  
-  #favorite-checkbox {
-    display: none;
-  }
-  
-  #favorite-checkbox-label {
-    font-size: calc(var(--font-base) * 2);
-    color: black;
-    cursor: pointer;
-  }
-  
-  #favorite-checkbox:checked + #favorite-checkbox-label {
-    color: gold;
-  }
-  
-  /* Botón Home responsive */
-  #home-button {
-    position: fixed;
-    bottom: 2vh;
-    right: 2vw;
-    width: clamp(2.5rem, 6vw, 4rem);
-    height: clamp(2.5rem, 6vw, 4rem);
-    background: var(--color-card);
-    border: 2px solid var(--color-text);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: background-color var(--transition);
-  }
-  
-  #home-button:hover {
-    background-color: #f0f0f0;
-  }
-  
-  #home-button img {
-    width: clamp(1.25rem, 4vw, 2rem);
-    height: auto;
-  }
-  
-  /* Botón de descarga responsive */
-  .download-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    width: clamp(1.5rem, 5vw, 3rem);
-    height: clamp(1.5rem, 5vw, 3rem);
-  }
-  
-  .download-btn::before {
-    content: "⬇️";
-    font-size: clamp(1rem, 3vw, 1.5rem);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .download-btn.downloaded::before {
-    content: "✅";
-  }
-
-  /* Botón de borrado (sección Offline) */
-  .delete-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    width: clamp(1.5rem, 5vw, 3rem);
-    height: clamp(1.5rem, 5vw, 3rem);
-  }
-
-  .delete-btn::before {
-    content: "🗑️";
-    font-size: clamp(1rem, 3vw, 1.5rem);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  /* ================================
-     Marcar leído hasta (separado)
-     ================================ */
-  .mark-up-to {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    clear: both;
-    margin: calc(var(--gap) * 2) auto 0;
-    padding: 0.75rem 1rem;
-    max-width: 800px;
-    background: rgba(255,255,255,0.8);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .mark-up-to label {
-    margin-right: 0.5rem;
-    font-size: var(--font-base);
-    font-weight: bold;
-    color: var(--color-text);
-  }
-  
-  .mark-up-to input[type="number"] {
-    width: 3rem;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: var(--radius);
-    font-size: var(--font-base);
-    transition: background-color var(--transition);
-  }
-  
-  .mark-up-to input[type="number"]:focus {
-    background-color: rgba(190, 155, 255, 0.2);
-    outline: none;
-  }
-  
-  .mark-up-to button {
-    padding: clamp(0.4rem, 1.5vw, 0.75rem) clamp(0.8rem, 3vw, 1.25rem);
-    font-size: clamp(0.875rem, 2.5vw, 1.125rem);
-    border: none;
-    border-radius: var(--radius);
-    background-color: rgba(190, 155, 255, 0.8);
-    cursor: pointer;
-    transition: background-color var(--transition);
-  }
-  
-  .mark-up-to button:hover {
-    background-color: rgba(190, 155, 255, 1);
-  }
-  
-  /* Media Queries */
-  @media (min-width: 600px) {
-    h1 { font-size: calc(var(--font-base) * 1.75); }
-    h2 { font-size: calc(var(--font-base) * 1.5); }
-    .chapter a { font-size: calc(var(--font-base) * 1.25); }
-  }
-  
-  @media (min-width: 992px) {
-    #manga-details { flex-direction: row; }
-  }
-  
-  @media (min-width: 1200px) {
-    #chapters-list {
-      grid-template-columns: repeat(5, 1fr);
-    }
-  }
-
-  .custom-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .custom-modal-content {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    text-align: center;
-  }
-  
-  .custom-modal-buttons {
-    margin-top: 15px;
-  }
-  
-  .custom-modal-buttons button {
-    margin: 0 10px;
-    padding: 5px 15px;
-  }
-  
-  
+}

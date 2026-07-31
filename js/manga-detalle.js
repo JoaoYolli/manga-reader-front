@@ -71,8 +71,15 @@ async function getMangaDetails() {
 }
 
 // --- Renderizar lista de capítulos ---
+let currentChapters = [];
+let currentMangaTitle = null;
+let currentMangaCid = null;
+
 function renderChapters(chapters, title, cid) {
     const container = document.getElementById("chapters-list");
+    currentChapters = chapters;
+    currentMangaTitle = title;
+    currentMangaCid = cid;
 
     // Limpiar lista sin eliminar controles
     Array.from(container.children).forEach(child => {
@@ -104,17 +111,29 @@ function renderChapters(chapters, title, cid) {
 
     // Renderizar cada capítulo
     sorted.forEach(ch => {
+        const chapterNum = Number(ch.num);
+
         const item = document.createElement('div');
         item.classList.add('chapter');
         item.setAttribute('data-chapter-number', ch.num);
 
         const link = document.createElement('a');
         link.href = `chapter.html?manga=${encodeURIComponent(title)}&cid=${cid}&chapter=${ch.num}`;
-        link.textContent = ch.name || `Capítulo ${ch.num}`;
+
+        const numChip = document.createElement('span');
+        numChip.className = 'chip mono chapter-num-chip';
+        numChip.textContent = `Cap. ${ch.num}`;
+
+        const titleText = document.createElement('span');
+        titleText.className = 'chapter-title-text';
+        titleText.textContent = ch.name || `Capítulo ${ch.num}`;
+
+        link.append(numChip, titleText);
 
         const btn = document.createElement('button');
-        btn.textContent = 'A';
         btn.classList.add('download-btn');
+        btn.setAttribute('aria-label', 'Descargar capítulo');
+        btn.innerHTML = '<span class="icon icon-download"></span><span class="icon icon-check"></span>';
         // Se asocia el botón a su id de descarga siempre al renderizarlo, no
         // solo al hacer click: si la descarga sigue en curso de una carga de
         // página anterior, el botón nuevo tiene que poder recibir igual el
@@ -131,7 +150,175 @@ function renderChapters(chapters, title, cid) {
 
         item.append(link, btn);
         container.appendChild(item);
+
+        bindChapterSelection(item, link, chapterNum);
     });
+}
+
+// --- Selección múltiple por pulsación larga ---
+// No sustituye a "marcar leído hasta N" (arriba): esa sigue sirviendo para
+// tandas grandes desde el 1. Esto es para elegir capítulos sueltos o un
+// rango pequeño a mano, tanto para marcar como leídos como para descargar
+// varios de una vez.
+const LONG_PRESS_MS = 500;
+let selectionMode = false;
+const selectedChapters = new Set(); // números de capítulo
+let selectionToolbarEl = null;
+
+function getChapterItemEls() {
+    return Array.from(document.getElementById('chapters-list').getElementsByClassName('chapter'));
+}
+
+function bindChapterSelection(item, link, chapterNum) {
+    let pressTimer = null;
+
+    item.addEventListener('pointerdown', e => {
+        if (e.target.closest('.download-btn')) return;
+        if (e.button !== undefined && e.button !== 0) return;
+        clearTimeout(pressTimer);
+        item.classList.add('pressing');
+        pressTimer = setTimeout(() => {
+            item.classList.remove('pressing');
+            item.dataset.longPressFired = 'true';
+            if (!selectionMode) enterSelectionMode();
+            toggleSelection(chapterNum, item);
+            if (navigator.vibrate) navigator.vibrate(15);
+        }, LONG_PRESS_MS);
+    });
+
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
+        item.addEventListener(evt, () => {
+            clearTimeout(pressTimer);
+            item.classList.remove('pressing');
+        });
+    });
+
+    item.addEventListener('contextmenu', e => {
+        if (selectionMode) e.preventDefault();
+    });
+
+    link.addEventListener('click', e => {
+        if (selectionMode) {
+            e.preventDefault();
+            toggleSelection(chapterNum, item);
+            return;
+        }
+        if (item.dataset.longPressFired === 'true') {
+            // El click que el navegador dispara justo después del long-press
+            // no debe navegar al capítulo.
+            e.preventDefault();
+            delete item.dataset.longPressFired;
+        }
+    });
+
+    item.addEventListener('click', e => {
+        if (!selectionMode) return;
+        if (e.target.closest('a') || e.target.closest('.download-btn')) return;
+        toggleSelection(chapterNum, item);
+    });
+}
+
+function toggleSelection(chapterNum, item) {
+    if (selectedChapters.has(chapterNum)) {
+        selectedChapters.delete(chapterNum);
+        item.classList.remove('selected');
+    } else {
+        selectedChapters.add(chapterNum);
+        item.classList.add('selected');
+    }
+    if (selectedChapters.size === 0) exitSelectionMode();
+    else updateSelectionToolbar();
+}
+
+function enterSelectionMode() {
+    selectionMode = true;
+    document.getElementById('chapters-list').classList.add('selection-mode');
+    ensureSelectionToolbar();
+    updateSelectionToolbar();
+}
+
+function exitSelectionMode() {
+    selectionMode = false;
+    selectedChapters.clear();
+    document.getElementById('chapters-list').classList.remove('selection-mode');
+    getChapterItemEls().forEach(item => item.classList.remove('selected'));
+    if (selectionToolbarEl) {
+        selectionToolbarEl.remove();
+        selectionToolbarEl = null;
+    }
+}
+
+function updateSelectionToolbar() {
+    if (!selectionToolbarEl) return;
+    const count = selectedChapters.size;
+    selectionToolbarEl.querySelector('.selection-toolbar-count').textContent =
+        `${count} seleccionado${count === 1 ? '' : 's'}`;
+}
+
+function ensureSelectionToolbar() {
+    if (selectionToolbarEl) return selectionToolbarEl;
+
+    const bar = document.createElement('div');
+    bar.className = 'selection-toolbar';
+    bar.innerHTML = `
+        <span class="selection-toolbar-count mono"></span>
+        <div class="selection-toolbar-actions">
+            <button id="selection-select-all" class="btn-ghost btn-sm" type="button">Todos</button>
+            <button id="selection-mark-read" class="btn-sm" type="button"><span class="icon icon-check"></span>Marcar leídos</button>
+            <button id="selection-download" class="btn-sm" type="button"><span class="icon icon-download"></span>Descargar</button>
+            <button id="selection-cancel" class="btn-ghost btn-icon" type="button" aria-label="Cancelar selección"><span class="icon icon-close"></span></button>
+        </div>`;
+    document.body.appendChild(bar);
+
+    bar.querySelector('#selection-select-all').addEventListener('click', () => {
+        const items = getChapterItemEls();
+        const allSelected = selectedChapters.size === items.length;
+        items.forEach(item => {
+            const num = Number(item.getAttribute('data-chapter-number'));
+            if (allSelected) {
+                selectedChapters.delete(num);
+                item.classList.remove('selected');
+            } else if (!selectedChapters.has(num)) {
+                selectedChapters.add(num);
+                item.classList.add('selected');
+            }
+        });
+        if (selectedChapters.size === 0) exitSelectionMode();
+        else updateSelectionToolbar();
+    });
+
+    bar.querySelector('#selection-mark-read').addEventListener('click', async () => {
+        const nums = Array.from(selectedChapters);
+        if (!nums.length) return;
+        const confirmed = await showConfirmationModal(`¿Marcar como leídos ${nums.length} capítulo${nums.length === 1 ? '' : 's'} seleccionado${nums.length === 1 ? '' : 's'}?`);
+        if (!confirmed) return;
+        for (const num of nums) {
+            await markChapterAsRead(num);
+        }
+        getFinishedChapters();
+        exitSelectionMode();
+    });
+
+    bar.querySelector('#selection-download').addEventListener('click', () => {
+        const nums = Array.from(selectedChapters);
+        if (!nums.length || !currentMangaTitle) return;
+        nums.forEach(num => {
+            const ch = currentChapters.find(c => Number(c.num) === num);
+            if (!ch) return;
+            const existingBtn = chapterButtonsById.get(generateDownloadId(currentMangaTitle, num));
+            if (existingBtn && existingBtn.classList.contains('downloaded')) return; // ya descargado, no repetir
+            // forceBaseLayer=true: varias descargas de un solo clic no pueden ir
+            // por Background Fetch sin que Chrome muestre el aviso de "varios
+            // archivos" (ver comentario en startChapterDownload).
+            downloadChapter(ch.num, currentMangaTitle, currentMangaCid, ch.name, `https://jimov-api.vercel.app${ch.url}`, true);
+        });
+        exitSelectionMode();
+    });
+
+    bar.querySelector('#selection-cancel').addEventListener('click', () => exitSelectionMode());
+
+    selectionToolbarEl = bar;
+    return bar;
 }
 
 // --- Descargar capítulo para lectura offline ---
@@ -151,7 +338,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url) {
+async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url, forceBaseLayer = false) {
     try {
         const res = await fetch(url);
         const data = await res.json();
@@ -169,7 +356,8 @@ async function downloadChapter(chapterNumber, mangaTitle, cid, chapterTitle, url
             imageUrls: images.map(img => img.url),
             thumbnailUrl: needsThumbnail ? currentMangaThumbnailUrl : null,
             token: currentToken,
-            backendUrl: back
+            backendUrl: back,
+            forceBaseLayer
         });
     } catch (err) {
         console.error("Error descargando capítulo:", err);
@@ -306,18 +494,17 @@ async function markChapterAsRead(chapterNumber) {
 function showConfirmationModal(message) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
-        modal.classList.add('custom-modal');
+        modal.className = 'modal-overlay';
         modal.innerHTML =
-            `<div class="custom-modal-content">
-                <p>${message}</p>
-                <div class="custom-modal-buttons">
-                    <button id="confirm-yes">Sí</button>
-                    <button id="confirm-no">No</button>
+            `<div class="modal-card">
+                <p style="color:var(--color-ink);">${message}</p>
+                <div style="display:flex; gap:0.5rem;">
+                    <button id="confirm-yes" class="btn-primary">Sí</button>
+                    <button id="confirm-no" class="btn-ghost">No</button>
                 </div>
             </div>`;
         document.body.appendChild(modal);
 
-        modal.style.display = 'block';
         modal.querySelector('#confirm-yes').addEventListener('click', () => {
             resolve(true);
             document.body.removeChild(modal);

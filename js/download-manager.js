@@ -16,18 +16,24 @@ function injectDownloadManagerStyles() {
             width: 3rem;
             height: 3rem;
             border-radius: 50%;
-            background: #4a90e2;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            background: var(--color-card, #fbf7ec);
+            border: 2px solid var(--color-ink, #211d16);
+            box-shadow: var(--stamp-shadow, 3px 3px 0 #c2b184);
             display: none;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            font-size: 1.3rem;
+            color: var(--color-accent, #b8442f);
             cursor: pointer;
             z-index: 3000;
             animation: download-ball-float 1.4s ease-in-out infinite;
+            transition: transform 110ms ease, box-shadow 110ms ease;
         }
+        #download-ball .icon { width: 1.3rem; height: 1.3rem; }
         #download-ball.visible { display: flex; }
+        #download-ball:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 var(--color-border-strong, #c2b184);
+        }
         @keyframes download-ball-float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
@@ -37,9 +43,11 @@ function injectDownloadManagerStyles() {
             bottom: 4.75rem;
             left: 1rem;
             display: none;
-            background: #fff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            background: var(--color-card, #fbf7ec);
+            color: var(--color-ink, #211d16);
+            border: 1px solid var(--color-border-strong, #c2b184);
+            border-radius: var(--radius-lg, 7px);
+            box-shadow: 4px 4px 0 var(--color-border-strong, #c2b184);
             padding: 0.75rem;
             width: min(300px, calc(100vw - 2rem));
             max-height: 50vh;
@@ -48,13 +56,16 @@ function injectDownloadManagerStyles() {
         }
         #download-panel h4 {
             margin: 0 0 0.5rem;
-            font-size: 0.9rem;
-            color: #333;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-ink-soft, #6b6151);
         }
         .download-item {
             margin-bottom: 0.6rem;
             font-size: 0.8rem;
-            color: #333;
+            color: var(--color-ink, #211d16);
         }
         .download-item-row {
             display: flex;
@@ -63,14 +74,14 @@ function injectDownloadManagerStyles() {
             gap: 0.5rem;
         }
         .download-item-bar {
-            background: #eee;
+            background: var(--color-bg-alt, #ece2c9);
             border-radius: 4px;
             height: 6px;
             margin-top: 4px;
             overflow: hidden;
         }
         .download-item-fill {
-            background: #4caf50;
+            background: var(--color-accent, #b8442f);
             height: 100%;
             width: 0%;
             transition: width 0.2s ease;
@@ -78,14 +89,19 @@ function injectDownloadManagerStyles() {
         .download-cancel-btn {
             border: none;
             background: transparent;
-            color: #c0392b;
+            box-shadow: none;
+            color: var(--color-danger, #a53228);
             cursor: pointer;
-            font-size: 0.95rem;
+            padding: 0.2rem;
             line-height: 1;
+            transition: transform 110ms ease;
         }
+        .download-cancel-btn:hover { color: var(--color-danger, #a53228); border-color: transparent; }
+        .download-cancel-btn:active { transform: scale(0.85); box-shadow: none; }
+        .download-cancel-btn .icon { width: 0.85rem; height: 0.85rem; }
         .download-empty {
             font-size: 0.8rem;
-            color: #666;
+            color: var(--color-ink-soft, #6b6151);
             margin: 0;
         }
     `;
@@ -98,7 +114,8 @@ function ensureDownloadManagerUI() {
 
     downloadBallEl = document.createElement('div');
     downloadBallEl.id = 'download-ball';
-    downloadBallEl.textContent = '⬇️';
+    downloadBallEl.innerHTML = '<span class="icon icon-download"></span>';
+    downloadBallEl.setAttribute('aria-label', 'Descargas en curso');
     downloadBallEl.addEventListener('click', () => {
         downloadPanelEl.style.display = downloadPanelEl.style.display === 'block' ? 'none' : 'block';
     });
@@ -145,8 +162,9 @@ function renderDownloadManager() {
 
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'download-cancel-btn';
-        cancelBtn.textContent = '✕';
+        cancelBtn.innerHTML = '<span class="icon icon-close"></span>';
         cancelBtn.title = 'Cancelar descarga';
+        cancelBtn.setAttribute('aria-label', 'Cancelar descarga');
         cancelBtn.addEventListener('click', () => cancelDownload(id));
 
         row.append(label, cancelBtn);
@@ -317,12 +335,25 @@ initDownloadManagerSync();
 
 // --- Iniciar / cancelar descargas ---
 
-async function startChapterDownload({ mangaTitle, cid, chapterNumber, chapterTitle, imageUrls, thumbnailUrl, token, backendUrl }) {
+// forceBaseLayer salta la capa de mejora (Background Fetch) aunque el
+// navegador la soporte. registration.backgroundFetch.fetch() exige
+// activación de usuario "transient" (un clic reciente) y, si el navegador
+// la detecta disparada varias veces sin un clic individual por cada una,
+// Chrome la trata como "descarga automática de varios archivos" y muestra
+// un aviso de permiso — nunca pasaba porque cada descarga salía de un clic
+// individual. Para "descargar varios capítulos seleccionados" (un solo
+// clic dispara N descargas) no hay forma de usar Background Fetch sin
+// toparse con eso, así que esas van siempre por la capa base: un fetch()
+// normal dentro del Service Worker, que no pasa por la UI de Descargas del
+// navegador y por tanto no dispara ese aviso. Se pierde solo la ventaja de
+// sobrevivir al cierre total de la app (sigue sobreviviendo a navegar
+// dentro de la PWA, que es lo que importa aquí).
+async function startChapterDownload({ mangaTitle, cid, chapterNumber, chapterTitle, imageUrls, thumbnailUrl, token, backendUrl, forceBaseLayer = false }) {
     const id = generateDownloadId(mangaTitle, chapterNumber);
     const label = `${mangaTitle} - Cap. ${chapterNumber}`;
     const reg = await getReadyRegistration();
 
-    if (await supportsBackgroundFetch()) {
+    if (!forceBaseLayer && await supportsBackgroundFetch()) {
         const toProxyUrl = url => `${backendUrl}/proxy?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`;
         const imageProxyUrls = imageUrls.map(toProxyUrl);
         const thumbnailProxyUrl = thumbnailUrl ? toProxyUrl(thumbnailUrl) : null;

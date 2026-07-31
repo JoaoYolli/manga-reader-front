@@ -39,6 +39,9 @@ async function loadChapter() {
         src: URL.createObjectURL(blob),
         alt: `Página ${i + 1}`
     }));
+    if (typeof initReadingProgress === 'function') {
+        initReadingProgress(mangaTitle, chapter.chapterNumber);
+    }
 
     populateChapterSelector();
     showNavigationButtons();

@@ -3,89 +3,35 @@
    (la clase la añade settings.js según localStorage.theme), así que si no
    está presente (tema claro, por defecto) ninguna de estas reglas aplica.
 
-   La mayoría de la interfaz ya usa variables CSS (--color-bg, --color-card,
-   --color-text) así que redefinirlas aquí "repinta" gratis casi todo; el
-   resto de reglas cubren los sitios donde cada hoja de estilo usa colores
-   literales en vez de variables. No es un rediseño pixel a pixel, cubre la
-   interfaz principal con buen contraste. */
+   Casi toda la interfaz usa los tokens de base.css (--color-bg,
+   --color-card, --color-ink, --color-accent, etc.) así que redefinirlos
+   aquí "repinta" gratis prácticamente todo, incluidos componentes que ya
+   invierten deliberadamente ink/bg (la barra de selección múltiple, el
+   aviso de "retomado en la página X") — al ser tokens, la inversión de
+   tema los sigue automáticamente. Solo quedan un par de sitios que usan un
+   color literal en vez de variable. */
 
 .dark-theme {
-  --color-bg: #121212;
-  --color-card: #1e1e1e;
-  --color-text: #e0e0e0;
+  --color-bg: #1c1712;
+  --color-bg-alt: #241e17;
+  --color-card: #2a2319;
+  --color-ink: #ece3d2;
+  --color-ink-soft: #ab9d84;
+  --color-border: #3c3325;
+  --color-border-strong: #52462f;
+
+  --color-accent: #e2724f;
+  --color-accent-hover: #ef8562;
+  --color-accent-soft: #3a2721;
 }
 
 .dark-theme body {
-  background-color: #121212;
+  background-color: var(--color-bg);
 }
 
-/* Header / menú hamburguesa (index.css usa colores literales, no variables) */
-.dark-theme .header {
-  background: #1e1e1e;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-.dark-theme .burger span {
-  background: #e0e0e0;
-}
-
-.dark-theme .menu {
-  background: #1e1e1e;
-  border-color: #333;
-}
-
-.dark-theme .menu a {
-  color: #e0e0e0;
-}
-
-.dark-theme .menu a:hover {
-  background: #2a2a2a;
-}
-
-.dark-theme .has-submenu .submenu {
-  background: #1e1e1e;
-  border-color: #333;
-}
-
-/* Tarjetas de detalle / marcar-hasta (manga-detalle.css usa rgba literal) */
-.dark-theme #manga-details,
-.dark-theme .mark-up-to,
-.dark-theme #chapter-details {
-  background-color: rgba(30, 30, 30, 0.85);
-  color: #e0e0e0;
-}
-
-/* Modal de confirmación (manga-detalle.css) */
-.dark-theme .custom-modal-content {
-  background-color: #1e1e1e;
-  color: #e0e0e0;
-}
-
-/* Aviso de imagen no cargada */
-.dark-theme .chapter-image-error {
-  background: rgba(30, 30, 30, 0.9);
-  color: #ff6b6b;
-  border-color: #ff6b6b;
-}
-
-/* Bolita/panel de descargas (download-manager.js inyecta su propio <style>;
-   necesita mayor especificidad para ganarle, no basta con el orden) */
-.dark-theme #download-panel {
-  background: #1e1e1e;
-  color: #e0e0e0;
-}
-
-.dark-theme #download-panel h4 {
-  color: #e0e0e0;
-}
-
-.dark-theme .download-item {
-  color: #e0e0e0;
-}
-
-/* Aviso de disponibilidad de InManga (index.css usa colores literales) */
-.dark-theme .status-banner {
-  background: #4a3c10;
-  color: #ffe69c;
-  border-bottom-color: #664d03;
+/* Ficha de manga: usa una capa semitransparente en tono papel literal
+   (manga-detalle.css) en vez de var(--color-card), para dejar traslucir la
+   portada de fondo — necesita su propia versión oscura. */
+.dark-theme #manga-details {
+  background-color: rgba(30, 26, 20, 0.88);
 }
