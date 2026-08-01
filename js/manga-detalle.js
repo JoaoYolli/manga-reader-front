@@ -62,7 +62,16 @@ async function getMangaDetails() {
                 document.body.style.backgroundImage = `url(${data.thumbnail.url})`;
             }
             document.getElementById("manga-title").textContent = data.name;
-            document.getElementById("manga-details").innerHTML = `<p>${data.synopsis}</p>`;
+            // textContent, no innerHTML: la sinopsis viene de la API de
+            // terceros (jimov-api/InManga) sin sanear — si alguna vez trae
+            // HTML/script, con innerHTML se ejecutaría en la app y podría
+            // robar el token de localStorage de quien la esté viendo.
+            const detailsEl = document.getElementById("manga-details");
+            detailsEl.innerHTML = "";
+            const synopsisEl = document.createElement("p");
+            synopsisEl.className = "manga-synopsis";
+            synopsisEl.textContent = data.synopsis || "";
+            detailsEl.appendChild(synopsisEl);
             renderChapters(data.chapters, title, cid);
         }
     } catch (err) {

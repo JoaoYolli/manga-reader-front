@@ -22,10 +22,14 @@ if (!('serviceWorker' in navigator)) return console.warn('SW no soportado');
     });
 
     console.log('Suscripción creada:', sub);
+    // /subscribe ahora exige sesión (antes cualquiera en internet podía
+    // mandar un endpoint inventado sin límite) — el token no ata la
+    // suscripción a ese usuario en concreto, solo demuestra que quien la
+    // manda tiene una cuenta válida.
     await fetch(`${back}/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sub)
+      body: JSON.stringify({ token: localStorage.getItem('token'), subscription: sub.toJSON() })
     });
 
     console.log('Suscripción enviada al servidor');

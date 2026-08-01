@@ -29,6 +29,13 @@ h1, h2 {
   border-radius: var(--radius);
 }
 
+/* Se rellena con textContent (no innerHTML, ver manga-detalle.js) — los
+   saltos de línea de la sinopsis original ya no los interpreta el HTML como
+   párrafos, así que se preservan visualmente por CSS en su lugar. */
+.manga-synopsis {
+  white-space: pre-wrap;
+}
+
 #manga-title {
   font-size: calc(var(--font-base) * 1.9);
   text-align: center;
