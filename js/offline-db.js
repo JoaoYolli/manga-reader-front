@@ -2,7 +2,7 @@
 // Almacén IndexedDB para capítulos descargados y visibles en la sección Offline.
 
 const OFFLINE_DB_NAME = 'mangaReaderOfflineDB';
-const OFFLINE_DB_VERSION = 2;
+const OFFLINE_DB_VERSION = 3;
 
 let dbPromise = null;
 
@@ -27,9 +27,38 @@ function openOfflineDB() {
             if (!db.objectStoreNames.contains('jobs')) {
                 db.createObjectStore('jobs', { keyPath: 'id' });
             }
+
+            if (!db.objectStoreNames.contains('books')) {
+                db.createObjectStore('books', { keyPath: 'id' });
+            }
         };
 
-        req.onsuccess = () => resolve(req.result);
+        // Esta es una app multi-página (sin router propio): es fácil tener
+        // varias pestañas/ventanas del mismo origen abiertas a la vez (p. ej.
+        // una pestaña vieja dejada abierta desde antes de que existiera el
+        // store 'books'). Si esa pestaña vieja sigue con una conexión abierta
+        // en una versión anterior, esta apertura se queda "blocked" — sin
+        // este manejador, la promesa no se resuelve NI se rechaza nunca, y
+        // cualquier await sobre openOfflineDB() (p. ej. listOfflineBooks() en
+        // libros.js) se cuelga para siempre, dejando la página en blanco
+        // hasta que se refresca (lo que cierra la conexión vieja de la propia
+        // pestaña y desbloquea la apertura). Se rechaza en vez de dejarlo
+        // colgado, para que el código que llama pueda al menos degradar con
+        // gracia en vez de quedarse esperando sin fin.
+        req.onblocked = () => reject(new Error('IndexedDB bloqueada por otra pestaña con una versión antigua abierta'));
+
+        req.onsuccess = () => {
+            const db = req.result;
+            // Si OTRA pestaña pide una versión más nueva más adelante, esta
+            // conexión se cierra sola en vez de quedarse abierta bloqueando
+            // esa apertura (el mismo problema que onblocked evita aquí, pero
+            // visto desde el lado de la conexión que sería la culpable).
+            db.onversionchange = () => {
+                db.close();
+                dbPromise = null;
+            };
+            resolve(db);
+        };
         req.onerror = () => reject(req.error);
     });
 
@@ -174,6 +203,53 @@ async function getDownloadJob(id) {
 async function deleteDownloadJob(id) {
     const db = await openOfflineDB();
     await requestToPromise(tx(db, 'jobs', 'readwrite').delete(id));
+}
+
+// --- Libros electrónicos (EPUB/PDF) ---
+// A diferencia de los capítulos de manga (muchas imágenes por descarga), un
+// libro es un único fichero: se guarda entero como un Blob, sin necesidad de
+// concurrencia ni de la maquinaria de Background Fetch de sw.js.
+
+async function saveBookOffline({ id, title, format, fileBlob }) {
+    const db = await openOfflineDB();
+    const existing = await requestToPromise(tx(db, 'books', 'readonly').get(id));
+    const record = {
+        id,
+        title,
+        format,
+        fileBlob,
+        sizeBytes: fileBlob?.size || 0,
+        downloadedAt: Date.now(),
+        localProgress: existing?.localProgress || null
+    };
+    await requestToPromise(tx(db, 'books', 'readwrite').put(record));
+}
+
+async function getOfflineBook(id) {
+    const db = await openOfflineDB();
+    return requestToPromise(tx(db, 'books', 'readonly').get(id));
+}
+
+async function listOfflineBooks() {
+    const db = await openOfflineDB();
+    return requestToPromise(tx(db, 'books', 'readonly').getAll());
+}
+
+async function deleteOfflineBook(id) {
+    const db = await openOfflineDB();
+    await requestToPromise(tx(db, 'books', 'readwrite').delete(id));
+}
+
+// Progreso local del libro (buffer antes/además de sincronizarlo con el
+// backend — ver book-reader.js). updatedAt permite comparar con el progreso
+// del servidor y quedarse con el más reciente al abrir el lector.
+async function saveLocalBookProgress(id, locator) {
+    const db = await openOfflineDB();
+    const store = tx(db, 'books', 'readwrite');
+    const existing = await requestToPromise(store.get(id));
+    if (!existing) return;
+    existing.localProgress = { locator, updatedAt: new Date().toISOString() };
+    await requestToPromise(store.put(existing));
 }
 
 // --- Formato ---

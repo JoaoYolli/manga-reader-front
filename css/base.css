@@ -239,6 +239,16 @@ button:disabled, .btn:disabled {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6z'/%3E%3C/svg%3E");
 }
 
+.icon-image {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86-3 3.87L9 13.14 6 17h12z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86-3 3.87L9 13.14 6 17h12z'/%3E%3C/svg%3E");
+}
+
+.icon-list {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='4.5' cy='6' r='1.5'/%3E%3Ccircle cx='4.5' cy='12' r='1.5'/%3E%3Ccircle cx='4.5' cy='18' r='1.5'/%3E%3Cpath d='M8 5h13v2H8zM8 11h13v2H8zM8 17h13v2H8z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='4.5' cy='6' r='1.5'/%3E%3Ccircle cx='4.5' cy='12' r='1.5'/%3E%3Ccircle cx='4.5' cy='18' r='1.5'/%3E%3Cpath d='M8 5h13v2H8zM8 11h13v2H8zM8 17h13v2H8z'/%3E%3C/svg%3E");
+}
+
 /* ─── Tarjeta base ──────────────────────────────────────────────────── */
 .card {
   background: var(--color-card);

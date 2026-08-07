@@ -186,6 +186,7 @@ function openSettingsModal() {
 
   const currentTheme = getSetting('theme', 'light');
   const currentMode = getReadingMode();
+  const currentPageTurnMode = getPageTurnMode();
 
   modal.innerHTML = `
   <div class="modal-card">
@@ -201,7 +202,7 @@ function openSettingsModal() {
       </label>
     </div>
 
-    <div style="text-align:left; margin-bottom:20px;">
+    <div style="text-align:left; margin-bottom:16px;">
       <p class="mono" style="margin-bottom:6px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-ink-soft);">Modo de lectura</p>
       <label style="display:block; margin-bottom:4px; cursor:pointer;">
         <input type="radio" name="settings-reading-mode" value="scroll" ${currentMode === 'scroll' ? 'checked' : ''}> Scroll continuo
@@ -209,6 +210,17 @@ function openSettingsModal() {
       <label style="display:block; cursor:pointer;">
         <input type="radio" name="settings-reading-mode" value="paginated" ${currentMode === 'paginated' ? 'checked' : ''}> Paginado (una imagen a la vez)
       </label>
+    </div>
+
+    <div style="text-align:left; margin-bottom:20px;">
+      <p class="mono" style="margin-bottom:6px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-ink-soft);">Pasar de página (manga paginado y libros)</p>
+      <label style="display:block; margin-bottom:4px; cursor:pointer;">
+        <input type="radio" name="settings-page-turn-mode" value="swipe" ${currentPageTurnMode === 'swipe' ? 'checked' : ''}> Deslizar
+      </label>
+      <label style="display:block; cursor:pointer;">
+        <input type="radio" name="settings-page-turn-mode" value="edge-click" ${currentPageTurnMode === 'edge-click' ? 'checked' : ''}> Clic en los bordes de la pantalla
+      </label>
+      <p style="font-size:0.8rem; color:var(--color-ink-soft); margin-top:4px;">El centro de la pantalla siempre muestra/oculta los controles, sea cual sea el modo elegido.</p>
     </div>
 
     <button id="close-settings" class="btn-primary">Cerrar</button>
@@ -228,6 +240,13 @@ function openSettingsModal() {
     input.addEventListener('change', () => {
       setSetting('readingMode', input.value);
       if (currentToken) apiSetPreferences(currentToken, { readingMode: input.value });
+    });
+  });
+
+  modal.querySelectorAll('input[name="settings-page-turn-mode"]').forEach(input => {
+    input.addEventListener('change', () => {
+      setSetting('pageTurnMode', input.value);
+      if (currentToken) apiSetPreferences(currentToken, { pageTurnMode: input.value });
     });
   });
 

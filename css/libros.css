@@ -1,0 +1,217 @@
+/* libros.css — biblioteca de libros electrónicos. Reutiliza .manga-card de
+   index.css para las tarjetas; aquí solo lo específico de los libros. */
+
+/* Secciones "En progreso" / "Sin leer" / "Terminados" — cada una con su
+   propia rejilla en vez de reutilizar #favorites (que en index.css ya es un
+   grid en sí mismo, pensado para una sola lista plana de tarjetas). */
+.book-section {
+  width: 100%;
+  margin-bottom: calc(var(--gap) * 1.5);
+}
+
+.book-section h3 {
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: calc(var(--font-base) * 0.95);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  margin-bottom: var(--gap);
+}
+
+.book-grid {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), var(--card-max-width)));
+  justify-content: center;
+  justify-items: center;
+}
+
+.manga-card {
+  position: relative;
+}
+
+/* Botón de borrar superpuesto en la esquina de la tarjeta — un libro es la
+   unidad atómica de descarga (no hay "capítulos" como en el manga), así que
+   no hace falta selección múltiple, un botón directo por tarjeta basta. */
+.book-delete-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--stamp-shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.book-delete-btn:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.book-delete-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+/* Botón "elegir portada" (solo admin) — esquina opuesta a la de borrar para
+   que no se solapen cuando ambos aparecen en la misma tarjeta. */
+.book-cover-btn {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--stamp-shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.book-cover-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.book-cover-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
+/* Modal de búsqueda/selección de portada (admin) */
+.cover-picker-card {
+  width: min(560px, 100%);
+  text-align: left;
+}
+
+.cover-picker-card h2,
+.cover-picker-card > p:first-of-type {
+  text-align: center;
+}
+
+.cover-picker-status {
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.cover-picker-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.6rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: var(--gap) 0;
+}
+
+/* .modal-card button (base.css) fuerza width:100% + margin-top a todo botón
+   del modal — hace falta una selector más específico para anularlo aquí y
+   que los resultados formen una rejilla en vez de apilarse en columna. */
+.modal-card .cover-picker-result {
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-bg-alt);
+  aspect-ratio: 3/4;
+  box-shadow: none;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.cover-picker-result:hover,
+.cover-picker-result:focus-visible {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.cover-picker-result img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-picker-hint {
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 0.4rem 0 0;
+}
+
+/* Ampliación al mantener pulsada una miniatura (bindCoverLongPress) */
+.cover-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(33, 29, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  pointer-events: none;
+}
+
+.cover-zoom-overlay img {
+  max-width: min(90vw, 500px);
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+}
+
+.cover-picker-manual-label {
+  margin-top: var(--gap);
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.cover-picker-manual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cover-picker-manual input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.cover-picker-url-preview {
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--color-border-strong);
+  flex: none;
+}
+
+.modal-card .cover-picker-manual button {
+  width: auto;
+  margin-top: 0;
+  flex: none;
+  white-space: nowrap;
+}

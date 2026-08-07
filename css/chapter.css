@@ -21,17 +21,60 @@ body {
   padding: var(--gap);
 }
 
+/* Sin esto, <main> (único hijo en flujo normal de body ahora que la
+   cabecera/pie/logo/home son position:fixed) puede quedarse solo tan ancho
+   como su contenido le pida en vez de ocupar el espacio disponible, y
+   entonces el margin:0 auto de #chapter-details no tiene hueco real donde
+   centrarse — las páginas del capítulo acaban pegadas a la izquierda en
+   vez de centradas en pantallas anchas. */
+main {
+  width: 100%;
+}
+
+/* ================================
+   Cabecera/controles/navegación: ocultos por defecto, aparecen con una
+   animación suave al tocar/clicar la pantalla (ver reading-mode.js,
+   toggleReaderChrome) — el contenido del capítulo pasa a ocupar toda la
+   pantalla y esta capa flota por encima solo mientras está visible. Pasar
+   de página ya no se hace con clic, solo deslizando (en modo paginado).
+   #logo y #home-button ya eran botones fijos e independientes del flujo
+   normal (ver más abajo) — se animan con opacity/pointer-events nada más,
+   nunca con transform, porque un transform en un ancestro cambiaría el
+   punto de referencia de su position:fixed y los desplazaría de sitio. */
+.reader-chrome {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.reader-chrome.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ================================
    Encabezado
    ================================ */
 header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   text-align: center;
-  margin-bottom: var(--gap);
+  padding: var(--gap);
+  background: var(--color-card);
+  border-bottom: 2px solid var(--color-ink);
+  transform: translateY(-12px);
+}
+
+header.visible {
+  transform: translateY(0);
 }
 
 header h1 {
   font-size: clamp(1.5rem, 5vw, 2rem);
-  color: #f2ead9;
+  color: var(--color-ink);
   margin-bottom: var(--gap);
 }
 
@@ -175,12 +218,23 @@ header h1 {
    Navegación entre Capítulos
    ================================ */
 #navigation-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   display: flex;
   justify-content: space-between;
-  width: 100%;
-  margin-top: var(--gap);
   flex-wrap: wrap;
   gap: var(--gap);
+  padding: var(--gap);
+  background: var(--color-card);
+  border-top: 2px solid var(--color-ink);
+  transform: translateY(12px);
+}
+
+#navigation-buttons.visible {
+  transform: translateY(0);
 }
 
 #navigation-buttons button {
@@ -228,7 +282,7 @@ header h1 {
   border: 2px solid var(--color-ink);
   padding: 0.3rem;
   box-shadow: var(--stamp-shadow);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), opacity 0.28s ease;
 }
 
 #logo:hover {
@@ -257,7 +311,7 @@ header h1 {
   justify-content: center;
   cursor: pointer;
   box-shadow: var(--stamp-shadow);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), opacity 0.28s ease;
   z-index: 1000;
 }
 
@@ -285,10 +339,6 @@ header h1 {
     padding: 0;
   }
 
-  header {
-    padding: var(--gap) var(--gap) 0;
-  }
-
   #chapter-details {
     padding: var(--gap) 0;
     border-radius: 0;
@@ -296,14 +346,6 @@ header h1 {
     box-shadow: none;
     background-color: transparent;
     max-width: 100%;
-  }
-
-  #chapter-select,
-  .chapter-title,
-  #navigation-buttons {
-    margin-left: var(--gap);
-    margin-right: var(--gap);
-    width: calc(100% - 2 * var(--gap));
   }
 
   #chapter-images img {

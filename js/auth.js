@@ -90,6 +90,7 @@ function persistSession({ token, username, isAdmin, preferences }) {
   if (preferences) {
     setSetting("theme", preferences.theme || "light");
     setSetting("readingMode", preferences.readingMode || "scroll");
+    setSetting("pageTurnMode", preferences.pageTurnMode || "swipe");
     applyTheme(preferences.theme || "light");
   }
 }
