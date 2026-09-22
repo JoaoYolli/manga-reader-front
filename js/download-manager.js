@@ -387,15 +387,47 @@ async function cancelDownload(id) {
     const entry = activeDownloads.get(id);
     if (!entry) return;
 
-    const reg = await getReadyRegistration();
-    if (entry.isBackgroundFetch) {
-        const bgRegistration = await reg?.backgroundFetch?.get(id);
-        await bgRegistration?.abort();
-        backgroundFetchCompletedUrls.delete(id);
+    if (entry.generic) {
+        genericAbortControllers.get(id)?.abort();
+        genericAbortControllers.delete(id);
     } else {
-        reg?.active?.postMessage({ type: 'cancel-download', id });
+        const reg = await getReadyRegistration();
+        if (entry.isBackgroundFetch) {
+            const bgRegistration = await reg?.backgroundFetch?.get(id);
+            await bgRegistration?.abort();
+            backgroundFetchCompletedUrls.delete(id);
+        } else {
+            reg?.active?.postMessage({ type: 'cancel-download', id });
+        }
     }
 
+    activeDownloads.delete(id);
+    renderDownloadManager();
+}
+
+// --- Descargas "genéricas" (no atadas al Service Worker) ---------------
+// Los libros (a diferencia de los capítulos de manga) no pasan por el SW: es
+// un simple fetch() por libro, orquestado desde la propia página (ver
+// downloadCollection en libros.js). Esta vía deja que cualquier código de
+// página registre/actualice/cierre un job en el mismo widget flotante sin
+// pasar por mensajes del SW ni por Background Fetch.
+const genericAbortControllers = new Map();
+
+function registerGenericDownload(id, label, abortController) {
+    activeDownloads.set(id, { label, progress: 0, isBackgroundFetch: false, generic: true });
+    if (abortController) genericAbortControllers.set(id, abortController);
+    renderDownloadManager();
+}
+
+function updateGenericDownloadProgress(id, progress) {
+    const entry = activeDownloads.get(id);
+    if (!entry) return;
+    entry.progress = progress;
+    renderDownloadManager();
+}
+
+function finishGenericDownload(id) {
+    genericAbortControllers.delete(id);
     activeDownloads.delete(id);
     renderDownloadManager();
 }

@@ -20,28 +20,45 @@
     <div class="div_centrado">
       <h1>Libros</h1>
     </div>
+    <div id="burger" class="burger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <nav id="menu" class="menu">
+      <ul>
+        <li><a href="../index.html">&larr; Volver a mangas</a></li>
+        <li id="rescan-menu-item" style="display:none;"><a href="#" id="rescan-library">Actualizar biblioteca</a></li>
+      </ul>
+    </nav>
   </header>
 
   <main class="container">
     <div style="width:100%">
-      <p style="text-align:center; margin-top:1rem;"><a href="../index.html">&larr; Volver</a></p>
-      <h2>Biblioteca</h2>
-      <p id="storage-total" class="mono" style="text-align:center; color:var(--color-ink-soft); font-size:0.8rem; margin-bottom:var(--gap);"></p>
+      <p id="storage-total" class="mono library-meta-line"></p>
+      <p id="library-scan-status" class="mono library-meta-line"></p>
 
-      <section class="book-section" id="section-in-progress" style="display:none;">
-        <h3>En progreso</h3>
+      <section class="book-section" id="in-progress-shelf" style="display:none;">
+        <h3>Lecturas en curso</h3>
         <div class="book-grid" id="books-in-progress"></div>
       </section>
 
-      <section class="book-section" id="section-unread" style="display:none;">
-        <h3>Sin leer</h3>
-        <div class="book-grid" id="books-unread"></div>
-      </section>
+      <div id="library-filters">
+        <input type="text" id="library-search" placeholder="Buscar por título...">
+        <div id="library-tag-filters" class="chip-filter-group">
+          <button type="button" class="chip-filter active" data-tag="all">Todos</button>
+          <button type="button" class="chip-filter" data-tag="unread">Sin leer</button>
+          <button type="button" class="chip-filter" data-tag="in-progress">En progreso</button>
+          <button type="button" class="chip-filter" data-tag="finished">Terminado</button>
+        </div>
+        <select id="library-collection-filter">
+          <option value="">Todas las colecciones</option>
+        </select>
+      </div>
 
-      <section class="book-section" id="section-finished" style="display:none;">
-        <h3>Terminados</h3>
-        <div class="book-grid" id="books-finished"></div>
-      </section>
+      <nav id="library-breadcrumb" class="mono"></nav>
+
+      <div class="book-grid" id="library-grid"></div>
 
       <p id="empty-message" style="text-align:center; display:none;">Todavía no hay libros disponibles.</p>
     </div>

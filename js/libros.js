@@ -1,4 +1,8 @@
-// libros.js — biblioteca de libros electrónicos (EPUB/PDF)
+// libros.js — biblioteca de libros electrónicos (EPUB/PDF), organizada en
+// colecciones (carpetas) que pueden contener más colecciones o libros, n
+// niveles. El id de cualquier nodo (libro o colección) es su ruta relativa
+// completa dentro de la carpeta de libros del servidor (p. ej.
+// "ColeccionA/Sub/Libro1.epub"), no solo su nombre de archivo.
 
 const back = "https://manga-back.yolli.xyz";
 
@@ -6,19 +10,67 @@ function isAdminUser() {
   return localStorage.getItem('isAdmin') === 'true';
 }
 
-async function fetchBooksOnline() {
+// --- Estado de la vista, reflejado en la URL (?path=&q=&tag=&collection=) -
+// `path`: colección que se está navegando (vacío = raíz).
+// `q`/`tag`/`collection`: filtros. En cuanto alguno está activo, la vista
+// cambia de navegación jerárquica a una lista plana con resultados de todo
+// el árbol (ver isFiltering/renderLibrary).
+
+function getViewState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    path: params.get('path') || '',
+    q: params.get('q') || '',
+    tag: params.get('tag') || 'all',
+    collection: params.get('collection') || ''
+  };
+}
+
+function setViewState(patch) {
+  const next = { ...getViewState(), ...patch };
+  const params = new URLSearchParams();
+  if (next.path) params.set('path', next.path);
+  if (next.q) params.set('q', next.q);
+  if (next.tag && next.tag !== 'all') params.set('tag', next.tag);
+  if (next.collection) params.set('collection', next.collection);
+  const query = params.toString();
+  history.replaceState(null, '', query ? `${location.pathname}?${query}` : location.pathname);
+}
+
+function isFiltering(state) {
+  return !!(state.q.trim() || state.tag !== 'all' || state.collection);
+}
+
+// --- Carga de la biblioteca (árbol + progreso) --------------------------
+
+async function fetchLibrary() {
   const token = localStorage.getItem('token');
   if (!token) throw new Error('Sin sesión');
 
-  const [booksRes, progressRes] = await Promise.all([
-    fetch(`${back}/books?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(5000) }),
-    fetch(`${back}/books/progress?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(5000) })
+  const [treeRes, progressRes] = await Promise.all([
+    fetch(`${back}/books?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(8000) }),
+    fetch(`${back}/books/progress?token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(8000) })
   ]);
-  if (!booksRes.ok) throw new Error('No se pudo obtener la lista de libros');
+  if (!treeRes.ok) throw new Error('No se pudo obtener la biblioteca');
 
-  const booksData = await booksRes.json();
+  const treeData = await treeRes.json();
   const progressData = progressRes.ok ? await progressRes.json() : { progress: {} };
-  return { books: booksData.books || [], progress: progressData.progress || {} };
+  return {
+    tree: treeData.tree || [],
+    lastScannedAt: treeData.lastScannedAt || null,
+    scanning: !!treeData.scanning,
+    progress: progressData.progress || {}
+  };
+}
+
+async function triggerRescan(token) {
+  const res = await fetch(`${back}/admin/books/rescan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+    signal: AbortSignal.timeout(5000)
+  });
+  return res.ok;
 }
 
 function showLibrosOfflineBanner() {
@@ -29,7 +81,7 @@ function showLibrosOfflineBanner() {
   banner.className = 'status-banner';
 
   const text = document.createElement('span');
-  text.textContent = 'Sin conexión: mostrando solo los libros descargados.';
+  text.textContent = 'Sin conexión: mostrando solo los libros descargados, sin colecciones.';
 
   const closeBtn = document.createElement('button');
   closeBtn.className = 'status-banner-close';
@@ -41,12 +93,7 @@ function showLibrosOfflineBanner() {
   document.body.prepend(banner);
 }
 
-// --- Progreso pendiente de sincronizar ---------------------------------
-// Si se leyó algún libro sin conexión, su progreso se quedó solo en
-// localStorage (ver libro-lector.js) hasta que se volviera a abrir ESE
-// libro en concreto con conexión — resolveStartingLocator() allí ya lo sube
-// en ese caso. Esto cubre el otro caso: entrar a la biblioteca con conexión
-// sin haber reabierto todavía cada libro leído offline uno a uno.
+// --- Progreso pendiente de sincronizar (igual que antes) ----------------
 
 function loadLocalProgressFor(bookId) {
   try {
@@ -58,10 +105,10 @@ function loadLocalProgressFor(bookId) {
 
 async function pushProgressToServer(token, bookId, locator, percent) {
   try {
-    const res = await fetch(`${back}/books/${encodeURIComponent(bookId)}/progress`, {
+    const res = await fetch(`${back}/books/progress`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, locator, percent: percent ?? null }),
+      body: JSON.stringify({ token, id: bookId, locator, percent: percent ?? null }),
       signal: AbortSignal.timeout(5000)
     });
     return res.ok;
@@ -80,11 +127,9 @@ async function syncPendingOfflineProgress(token, offlineBooks, serverProgress) {
   }
 }
 
-// --- Clasificación de la biblioteca: en progreso / sin leer / terminado --
-// El progreso "efectivo" de un libro puede venir del servidor o quedarse
-// solo en local (offline, todavía sin sincronizar) — se usa el más
-// reciente de los dos, mismo criterio que ya aplica
-// syncPendingOfflineProgress/resolveStartingLocator en libro-lector.js.
+// --- Clasificación: sin leer / en progreso / terminado -------------------
+// Sustituye a las antiguas secciones fijas — ahora es una etiqueta sobre
+// cada tarjeta (ver renderStatusBadge) y un criterio de filtro más.
 
 function getEffectiveProgress(bookId, serverProgress) {
   const local = loadLocalProgressFor(bookId);
@@ -93,26 +138,91 @@ function getEffectiveProgress(bookId, serverProgress) {
   return server || null;
 }
 
-// percent puede faltar (progreso guardado antes de que existiera este
-// campo, o un formato donde no se pudo calcular) — sin él, un libro con
-// progreso se trata como "en progreso" sin más detalle, nunca como
-// "terminado" por defecto (evita falsos terminados).
 function classifyBook(progressEntry) {
   if (!progressEntry) return 'unread';
   if (typeof progressEntry.percent === 'number' && progressEntry.percent >= 100) return 'finished';
   return 'in-progress';
 }
 
-// --- Portada elegida por un admin (Open Library) ------------------------
-// Solo un admin puede buscar/elegir; el resultado (coverUrl en /books) lo ve
-// todo el mundo por igual. Si no hay ninguna elegida, cada tarjeta sigue
-// usando la portada generada por canvas (book-cover.js) como hasta ahora.
+const STATUS_LABELS = { unread: 'Sin leer', 'in-progress': 'En progreso', finished: 'Terminado' };
+
+function renderStatusBadge(status, percent) {
+  const badge = document.createElement('span');
+  badge.className = `book-status-badge status-${status}`;
+  badge.textContent = status === 'in-progress' && typeof percent === 'number'
+    ? `${STATUS_LABELS[status]} ${percent}%`
+    : STATUS_LABELS[status];
+  return badge;
+}
+
+// --- Árbol: helpers de navegación ----------------------------------------
+
+function findCollectionChildren(tree, collectionId) {
+  if (!collectionId) return { node: null, children: tree };
+  function search(nodes) {
+    for (const node of nodes) {
+      if (node.type !== 'collection') continue;
+      if (node.id === collectionId) return node;
+      const found = search(node.children);
+      if (found) return found;
+    }
+    return null;
+  }
+  const node = search(tree);
+  return { node, children: node ? node.children : [] };
+}
+
+function buildBreadcrumb(tree, collectionId) {
+  if (!collectionId) return [];
+  const segments = collectionId.split('/');
+  const crumbs = [];
+  let idAcc = '';
+  let children = tree;
+  for (const seg of segments) {
+    idAcc = idAcc ? `${idAcc}/${seg}` : seg;
+    const node = children.find(n => n.type === 'collection' && n.id === idAcc);
+    crumbs.push({ id: idAcc, name: node ? node.name : seg });
+    children = node ? node.children : [];
+  }
+  return crumbs;
+}
+
+function flattenBooks(nodes, collectionPath = [], out = []) {
+  nodes.forEach(node => {
+    if (node.type === 'book') {
+      out.push({ node, collectionPath });
+    } else {
+      flattenBooks(node.children, [...collectionPath, node], out);
+    }
+  });
+  return out;
+}
+
+function flattenCollections(nodes, out = []) {
+  nodes.forEach(node => {
+    if (node.type !== 'collection') return;
+    out.push(node);
+    flattenCollections(node.children, out);
+  });
+  return out;
+}
+
+function collectBookDescendants(collectionNode, out = []) {
+  collectionNode.children.forEach(child => {
+    if (child.type === 'book') out.push(child);
+    else collectBookDescendants(child, out);
+  });
+  return out;
+}
+
+// --- Portada elegida por un admin (Open Library) — igual para libros y
+// colecciones, el backend identifica el nodo por su id (ruta) sin más ------
 
 async function searchBookCovers(token, id, query) {
-  const res = await fetch(`${back}/admin/books/${encodeURIComponent(id)}/cover_search`, {
+  const res = await fetch(`${back}/admin/books/cover_search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, query }),
+    body: JSON.stringify({ token, id, query }),
     signal: AbortSignal.timeout(10000)
   });
   if (!res.ok) throw new Error('No se pudo buscar portadas');
@@ -121,21 +231,15 @@ async function searchBookCovers(token, id, query) {
 }
 
 async function setBookCover(token, id, coverUrl) {
-  const res = await fetch(`${back}/admin/books/${encodeURIComponent(id)}/cover`, {
+  const res = await fetch(`${back}/admin/books/cover`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, coverUrl }),
+    body: JSON.stringify({ token, id, coverUrl }),
     signal: AbortSignal.timeout(5000)
   });
   if (!res.ok) throw new Error('No se pudo guardar la portada');
 }
 
-// Mantener pulsado sobre una miniatura la amplía a pantalla completa para
-// verla bien antes de elegirla — mismo umbral (LONG_PRESS_MS) que el
-// long-press de selección múltiple de offline-manga.js/manga-detalle.js.
-// Soltar (o mover fuera) cierra la ampliación sin seleccionar nada; si el
-// long-press llegó a disparar, se ignora el click posterior para no elegir
-// esa portada sin querer justo al soltar.
 const COVER_LONG_PRESS_MS = 500;
 
 function showCoverZoom(src, alt) {
@@ -239,7 +343,7 @@ function showCoverPickerModal(id, title, currentCoverUrl, onSaved) {
       const results = await searchBookCovers(token, id, queryInput.value.trim());
       resultsEl.innerHTML = '';
       if (!results.length) {
-        resultsEl.innerHTML = '<p class="cover-picker-status">Sin resultados. Puede que Open Library no tenga portada para este título — prueba con otra búsqueda (por ejemplo, solo el nombre de la serie, sin el número de volumen), o pega una URL de imagen abajo.</p>';
+        resultsEl.innerHTML = '<p class="cover-picker-status">Sin resultados. Puede que Open Library no tenga portada para este título — prueba con otra búsqueda, o pega una URL de imagen abajo.</p>';
         return;
       }
       results.forEach(r => {
@@ -262,9 +366,6 @@ function showCoverPickerModal(id, title, currentCoverUrl, onSaved) {
     }
   }
 
-  // Vista previa en vivo de la URL pegada a mano, para comprobar que carga
-  // antes de guardarla — si la imagen falla, se oculta sin más (no hace
-  // falta un mensaje de error propio, "Usar esta imagen" ya valida al usarla).
   let urlPreviewTimer = null;
   urlInput.addEventListener('input', () => {
     clearTimeout(urlPreviewTimer);
@@ -302,9 +403,62 @@ function showCoverPickerModal(id, title, currentCoverUrl, onSaved) {
   runSearch();
 }
 
-// --- Tarjetas ------------------------------------------------------------
+// --- Descarga de una colección completa (recursiva) ----------------------
+// A diferencia de un libro suelto (un fetch por click), aquí se orquesta un
+// lote de descargas desde la propia página, con concurrencia limitada (mismo
+// patrón que sw.js usa para las imágenes de un capítulo), reutilizando el
+// mismo widget flotante de descargas vía la vía "genérica" de
+// download-manager.js.
 
-function renderBookCard({ id, title, format, coverUrl, downloaded, sizeBytes, status, percent, canManageCover, onDeleted, onCoverChanged }) {
+async function downloadCollection(collectionNode) {
+  const books = collectBookDescendants(collectionNode);
+  if (!books.length) {
+    alert('Esta colección no tiene libros para descargar.');
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  const jobId = `collection-dl-${encodeURIComponent(collectionNode.id)}`;
+  const controller = new AbortController();
+  registerGenericDownload(jobId, `Colección: ${collectionNode.name}`, controller);
+
+  const CONCURRENCY = 3;
+  let nextIndex = 0;
+  let completed = 0;
+
+  async function worker() {
+    while (nextIndex < books.length) {
+      const i = nextIndex++;
+      const book = books[i];
+      try {
+        const existing = await getOfflineBook(book.id);
+        if (!existing) {
+          const res = await fetch(`${back}/books/file?id=${encodeURIComponent(book.id)}&token=${encodeURIComponent(token)}`, { signal: controller.signal });
+          if (!res.ok) throw new Error(`No se pudo descargar ${book.id}`);
+          const blob = await res.blob();
+          await saveBookOffline({ id: book.id, title: book.title, format: book.format, fileBlob: blob });
+        }
+      } catch (err) {
+        if (controller.signal.aborted) throw err;
+        console.error('No se pudo descargar', book.id, err);
+      }
+      completed++;
+      updateGenericDownloadProgress(jobId, Math.round((completed / books.length) * 100));
+    }
+  }
+
+  try {
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, books.length) }, worker));
+  } catch (err) {
+    if (!controller.signal.aborted) console.error('Error descargando la colección:', err);
+  } finally {
+    finishGenericDownload(jobId);
+  }
+}
+
+// --- Tarjetas --------------------------------------------------------------
+
+function renderBookCard({ id, title, format, coverUrl, downloaded, sizeBytes, status, percent, collectionLabel, canManageCover, onDeleted, onCoverChanged }) {
   const card = document.createElement('div');
   card.classList.add('manga-card');
   card.addEventListener('click', () => {
@@ -317,6 +471,8 @@ function renderBookCard({ id, title, format, coverUrl, downloaded, sizeBytes, st
   img.alt = title;
   card.appendChild(img);
 
+  card.appendChild(renderStatusBadge(status, percent));
+
   const titleEl = document.createElement('h3');
   titleEl.textContent = title;
   card.appendChild(titleEl);
@@ -325,8 +481,7 @@ function renderBookCard({ id, title, format, coverUrl, downloaded, sizeBytes, st
   meta.className = 'manga-card-meta mono';
   const bits = [(format || '').toUpperCase()];
   if (downloaded) bits.push(formatBytes(sizeBytes));
-  if (status === 'finished') bits.push('Terminado');
-  else if (status === 'in-progress') bits.push(typeof percent === 'number' ? `${percent}% leído` : 'En progreso');
+  if (collectionLabel) bits.push(collectionLabel);
   meta.textContent = bits.join(' · ');
   card.appendChild(meta);
 
@@ -360,116 +515,437 @@ function renderBookCard({ id, title, format, coverUrl, downloaded, sizeBytes, st
   return card;
 }
 
-async function renderLibrary() {
-  const sections = {
-    'in-progress': { section: document.getElementById('section-in-progress'), grid: document.getElementById('books-in-progress') },
-    unread: { section: document.getElementById('section-unread'), grid: document.getElementById('books-unread') },
-    finished: { section: document.getElementById('section-finished'), grid: document.getElementById('books-finished') }
-  };
-  const emptyMessage = document.getElementById('empty-message');
-  const totalEl = document.getElementById('storage-total');
-  Object.values(sections).forEach(({ section, grid }) => {
-    grid.innerHTML = '';
-    section.style.display = 'none';
-  });
-  emptyMessage.style.display = 'none';
+function renderCollectionCard(node, { canManageCover, onNavigate, onCoverChanged }) {
+  const bookCount = collectBookDescendants(node).length;
 
+  const card = document.createElement('div');
+  card.classList.add('manga-card', 'collection-card');
+  card.addEventListener('click', () => onNavigate(node.id));
+  if (window.isTvMode) makeTvFocusable(card);
+
+  const img = document.createElement('img');
+  img.src = node.coverUrl || generateBookCoverDataUrl(node.name);
+  img.alt = node.name;
+  card.appendChild(img);
+
+  const titleEl = document.createElement('h3');
+  titleEl.textContent = node.name;
+  card.appendChild(titleEl);
+
+  const meta = document.createElement('p');
+  meta.className = 'manga-card-meta mono';
+  meta.textContent = `${bookCount} libro${bookCount === 1 ? '' : 's'}`;
+  card.appendChild(meta);
+
+  const downloadBtn = document.createElement('button');
+  downloadBtn.className = 'collection-download-btn';
+  downloadBtn.setAttribute('aria-label', 'Descargar colección completa');
+  downloadBtn.title = 'Descargar toda la colección para leer sin conexión';
+  downloadBtn.innerHTML = '<span class="icon icon-download"></span>';
+  downloadBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    downloadCollection(node);
+  });
+  card.appendChild(downloadBtn);
+
+  if (canManageCover) {
+    const coverBtn = document.createElement('button');
+    coverBtn.className = 'book-cover-btn';
+    coverBtn.setAttribute('aria-label', 'Elegir portada de la colección');
+    coverBtn.title = 'Elegir portada';
+    coverBtn.innerHTML = '<span class="icon icon-image"></span>';
+    coverBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      showCoverPickerModal(node.id, node.name, node.coverUrl, onCoverChanged);
+    });
+    card.appendChild(coverBtn);
+  }
+
+  return card;
+}
+
+// --- Orquestación de la carga + render ------------------------------------
+
+let libraryData = { tree: [], progress: {}, lastScannedAt: null, scanning: false, hasOnline: false };
+let offlineBooksById = new Map();
+
+function formatRelativeTime(iso) {
+  if (!iso) return null;
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(diffMs / 60000);
+  if (minutes < 1) return 'hace un momento';
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `hace ${hours} h`;
+  const days = Math.round(hours / 24);
+  return `hace ${days} día${days === 1 ? '' : 's'}`;
+}
+
+function bookEntryToCardProps(entry, { collectionLabel }) {
+  const { node } = entry;
+  const offlineRecord = offlineBooksById.get(node.id);
+  const progressEntry = getEffectiveProgress(node.id, libraryData.progress);
+  return {
+    id: node.id,
+    title: node.title,
+    format: node.format,
+    coverUrl: node.coverUrl,
+    downloaded: !!offlineRecord,
+    sizeBytes: offlineRecord?.sizeBytes,
+    status: classifyBook(progressEntry),
+    percent: progressEntry?.percent,
+    collectionLabel
+  };
+}
+
+async function loadLibraryData() {
   let offlineBooks = [];
   try {
     offlineBooks = await listOfflineBooks();
   } catch (err) {
-    // openOfflineDB() puede rechazar si otra pestaña con una conexión más
-    // antigua bloquea la apertura (ver offline-db.js) — sin este try/catch,
-    // el error quedaba sin capturar dentro de este async function y la
-    // biblioteca se quedaba en blanco (las rejillas ya se habían vaciado más
-    // arriba) en vez de degradar mostrando al menos los libros online.
     console.warn('No se pudo leer los libros descargados:', err);
   }
-  const offlineById = new Map(offlineBooks.map(b => [b.id, b]));
-
-  if (totalEl) {
-    if (offlineBooks.length) {
-      const totalBytes = offlineBooks.reduce((sum, b) => sum + (b.sizeBytes || 0), 0);
-      totalEl.textContent = `${formatBytes(totalBytes)} descargados · ${offlineBooks.length} libro${offlineBooks.length === 1 ? '' : 's'}`;
-    } else {
-      totalEl.textContent = '';
-    }
-  }
-
-  let onlineBooks = [];
-  let progress = {};
-  let hasOnline = false;
-  let token = null;
+  offlineBooksById = new Map(offlineBooks.map(b => [b.id, b]));
 
   try {
-    const result = await fetchBooksOnline();
-    onlineBooks = result.books;
-    progress = result.progress;
-    hasOnline = true;
-    token = localStorage.getItem('token');
+    const result = await fetchLibrary();
+    libraryData = { ...result, hasOnline: true };
+    const token = localStorage.getItem('token');
+    if (token && offlineBooks.length) {
+      syncPendingOfflineProgress(token, offlineBooks, result.progress).catch(err =>
+        console.warn('No se pudo sincronizar el progreso pendiente:', err));
+    }
   } catch (err) {
     console.warn('No se pudo cargar la biblioteca desde el servidor, se muestran solo los libros descargados:', err);
+    libraryData = { tree: [], progress: {}, lastScannedAt: null, scanning: false, hasOnline: false };
   }
+}
 
-  if (!hasOnline) {
-    showLibrosOfflineBanner();
-  } else if (token && offlineBooks.length) {
-    syncPendingOfflineProgress(token, offlineBooks, progress).catch(err =>
-      console.warn('No se pudo sincronizar el progreso pendiente:', err));
+function renderStorageTotals() {
+  const totalEl = document.getElementById('storage-total');
+  const offlineBooks = Array.from(offlineBooksById.values());
+  if (!offlineBooks.length) {
+    totalEl.textContent = '';
+    return;
   }
+  const totalBytes = offlineBooks.reduce((sum, b) => sum + (b.sizeBytes || 0), 0);
+  totalEl.textContent = `${formatBytes(totalBytes)} descargados · ${offlineBooks.length} libro${offlineBooks.length === 1 ? '' : 's'}`;
+}
 
-  // Fusión: todo lo que hay online + los descargados que ya no estén en la
-  // lista online (por si se quitaron de la carpeta pero siguen offline).
-  const byId = new Map();
-  onlineBooks.forEach(b => byId.set(b.id, b));
-  offlineBooks.forEach(b => {
-    if (!byId.has(b.id)) byId.set(b.id, { id: b.id, title: b.title, format: b.format });
-  });
+function renderScanStatus() {
+  const el = document.getElementById('library-scan-status');
+  if (!libraryData.hasOnline) {
+    el.textContent = '';
+    return;
+  }
+  if (libraryData.scanning) {
+    el.textContent = 'Actualizando la biblioteca…';
+    return;
+  }
+  const rel = formatRelativeTime(libraryData.lastScannedAt);
+  el.textContent = rel ? `Biblioteca actualizada ${rel}` : '';
+}
 
-  const allBooks = Array.from(byId.values());
+function renderInProgressShelf() {
+  const section = document.getElementById('in-progress-shelf');
+  const grid = document.getElementById('books-in-progress');
+  grid.innerHTML = '';
 
-  if (!allBooks.length) {
-    emptyMessage.style.display = 'block';
+  const entries = flattenBooks(libraryData.tree)
+    .map(entry => ({ entry, progressEntry: getEffectiveProgress(entry.node.id, libraryData.progress) }))
+    .filter(({ progressEntry }) => classifyBook(progressEntry) === 'in-progress');
+
+  if (!entries.length) {
+    section.style.display = 'none';
     return;
   }
 
-  const canManageCovers = hasOnline && isAdminUser();
+  entries.sort((a, b) => new Date(b.progressEntry.updatedAt) - new Date(a.progressEntry.updatedAt));
+  section.style.display = 'block';
 
-  // Clasificación: en progreso (con %, más reciente primero) / sin leer /
-  // terminado (alfabético dentro de cada uno, salvo "en progreso").
-  const classified = { 'in-progress': [], unread: [], finished: [] };
-  allBooks.forEach(book => {
-    const progressEntry = getEffectiveProgress(book.id, progress);
-    classified[classifyBook(progressEntry)].push({ book, progressEntry });
+  entries.forEach(({ entry }) => {
+    const collectionLabel = entry.collectionPath.map(c => c.name).join(' / ') || null;
+    const card = renderBookCard({
+      ...bookEntryToCardProps(entry, { collectionLabel }),
+      canManageCover: false,
+      onDeleted: renderLibraryView,
+      onCoverChanged: renderLibraryView
+    });
+    grid.appendChild(card);
   });
+}
 
-  classified['in-progress'].sort((a, b) =>
-    new Date(b.progressEntry.updatedAt) - new Date(a.progressEntry.updatedAt));
-  classified.unread.sort((a, b) => a.book.title.localeCompare(b.book.title));
-  classified.finished.sort((a, b) => a.book.title.localeCompare(b.book.title));
+function renderCollectionFilterOptions() {
+  const select = document.getElementById('library-collection-filter');
+  const current = select.value;
+  select.innerHTML = '<option value="">Todas las colecciones</option>';
+  flattenCollections(libraryData.tree).forEach(col => {
+    const depth = col.id.split('/').length - 1;
+    const opt = document.createElement('option');
+    opt.value = col.id;
+    opt.textContent = `${'— '.repeat(depth)}${col.name}`;
+    select.appendChild(opt);
+  });
+  select.value = current;
+}
 
-  Object.entries(classified).forEach(([status, entries]) => {
-    if (!entries.length) return;
-    const { section, grid } = sections[status];
-    section.style.display = 'block';
-    entries.forEach(({ book, progressEntry }) => {
-      const offlineRecord = offlineById.get(book.id);
+function renderBreadcrumb(state) {
+  const nav = document.getElementById('library-breadcrumb');
+  nav.innerHTML = '';
+  if (isFiltering(state) || !libraryData.hasOnline) {
+    nav.style.display = 'none';
+    return;
+  }
+  nav.style.display = 'flex';
+
+  const homeBtn = document.createElement('button');
+  homeBtn.type = 'button';
+  homeBtn.textContent = 'Biblioteca';
+  homeBtn.addEventListener('click', () => { setViewState({ path: '' }); renderLibraryView(); });
+  nav.appendChild(homeBtn);
+
+  const crumbs = buildBreadcrumb(libraryData.tree, state.path);
+  crumbs.forEach((crumb, i) => {
+    const sep = document.createElement('span');
+    sep.className = 'breadcrumb-sep';
+    sep.textContent = '›';
+    nav.appendChild(sep);
+
+    if (i === crumbs.length - 1) {
+      const current = document.createElement('span');
+      current.className = 'breadcrumb-current';
+      current.textContent = crumb.name;
+      nav.appendChild(current);
+    } else {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = crumb.name;
+      btn.addEventListener('click', () => { setViewState({ path: crumb.id }); renderLibraryView(); });
+      nav.appendChild(btn);
+    }
+  });
+}
+
+function renderHierarchyGrid(state) {
+  const grid = document.getElementById('library-grid');
+  const emptyMessage = document.getElementById('empty-message');
+  grid.innerHTML = '';
+
+  if (!libraryData.hasOnline) {
+    // Sin conexión: no se conoce el árbol real, se listan los libros
+    // descargados en plano, sin navegación por colecciones.
+    const offlineBooks = Array.from(offlineBooksById.values());
+    if (!offlineBooks.length) {
+      emptyMessage.style.display = 'block';
+      return;
+    }
+    emptyMessage.style.display = 'none';
+    offlineBooks.forEach(book => {
+      const collectionLabel = book.id.includes('/') ? book.id.split('/').slice(0, -1).join(' / ') : null;
+      const progressEntry = getEffectiveProgress(book.id, {});
       const card = renderBookCard({
         id: book.id,
         title: book.title,
         format: book.format,
-        coverUrl: book.coverUrl,
-        downloaded: !!offlineRecord,
-        sizeBytes: offlineRecord?.sizeBytes,
-        status,
+        coverUrl: null,
+        downloaded: true,
+        sizeBytes: book.sizeBytes,
+        status: classifyBook(progressEntry),
         percent: progressEntry?.percent,
-        canManageCover: canManageCovers,
-        onDeleted: renderLibrary,
-        onCoverChanged: renderLibrary
+        collectionLabel,
+        canManageCover: false,
+        onDeleted: renderLibraryView,
+        onCoverChanged: renderLibraryView
       });
       grid.appendChild(card);
     });
+    return;
+  }
+
+  const { children } = findCollectionChildren(libraryData.tree, state.path);
+  if (!children.length) {
+    emptyMessage.style.display = 'block';
+    return;
+  }
+  emptyMessage.style.display = 'none';
+
+  const canManageCovers = isAdminUser();
+
+  children.forEach(node => {
+    if (node.type === 'collection') {
+      grid.appendChild(renderCollectionCard(node, {
+        canManageCover: canManageCovers,
+        onNavigate: id => { setViewState({ path: id }); renderLibraryView(); },
+        onCoverChanged: renderLibraryView
+      }));
+    } else {
+      grid.appendChild(renderBookCard({
+        ...bookEntryToCardProps({ node }, { collectionLabel: null }),
+        canManageCover: canManageCovers,
+        onDeleted: renderLibraryView,
+        onCoverChanged: renderLibraryView
+      }));
+    }
   });
 }
 
-document.addEventListener('DOMContentLoaded', renderLibrary);
+function renderFilteredGrid(state) {
+  const grid = document.getElementById('library-grid');
+  const emptyMessage = document.getElementById('empty-message');
+  grid.innerHTML = '';
+
+  const q = state.q.trim().toLowerCase();
+  const canManageCovers = libraryData.hasOnline && isAdminUser();
+
+  const results = flattenBooks(libraryData.tree).filter(entry => {
+    if (q && !entry.node.title.toLowerCase().includes(q)) return false;
+    if (state.collection && !entry.collectionPath.some(c => c.id === state.collection)) return false;
+    if (state.tag !== 'all') {
+      const progressEntry = getEffectiveProgress(entry.node.id, libraryData.progress);
+      if (classifyBook(progressEntry) !== state.tag) return false;
+    }
+    return true;
+  });
+
+  results.sort((a, b) => a.node.title.localeCompare(b.node.title));
+
+  if (!results.length) {
+    emptyMessage.style.display = 'block';
+    return;
+  }
+  emptyMessage.style.display = 'none';
+
+  results.forEach(entry => {
+    const collectionLabel = entry.collectionPath.map(c => c.name).join(' / ') || null;
+    grid.appendChild(renderBookCard({
+      ...bookEntryToCardProps(entry, { collectionLabel }),
+      canManageCover: canManageCovers,
+      onDeleted: renderLibraryView,
+      onCoverChanged: renderLibraryView
+    }));
+  });
+}
+
+async function renderLibraryView() {
+  const state = getViewState();
+
+  renderStorageTotals();
+  renderScanStatus();
+  renderInProgressShelf();
+  renderCollectionFilterOptions();
+  renderBreadcrumb(state);
+
+  document.getElementById('library-search').value = state.q;
+  document.querySelectorAll('.chip-filter').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tag === state.tag);
+  });
+  document.getElementById('library-collection-filter').value = state.collection;
+
+  if (!libraryData.hasOnline) {
+    showLibrosOfflineBanner();
+  }
+
+  if (isFiltering(state)) {
+    renderFilteredGrid(state);
+  } else {
+    renderHierarchyGrid(state);
+  }
+}
+
+async function renderLibrary() {
+  await loadLibraryData();
+  await renderLibraryView();
+}
+
+// --- Rescan (solo admin), asíncrono con polling ---------------------------
+
+let rescanPolling = false;
+
+function pollRescan() {
+  if (rescanPolling) return;
+  rescanPolling = true;
+
+  const check = async () => {
+    try {
+      const { tree, lastScannedAt, scanning, progress } = await fetchLibrary();
+      libraryData = { tree, lastScannedAt, scanning, progress, hasOnline: true };
+      renderScanStatus();
+      if (scanning) {
+        setTimeout(check, 2000);
+        return;
+      }
+    } catch (err) {
+      console.warn('No se pudo comprobar el estado del rescan:', err);
+    }
+    rescanPolling = false;
+    renderLibraryView();
+  };
+
+  check();
+}
+
+function initMenu() {
+  const burger = document.getElementById('burger');
+  const menu = document.getElementById('menu');
+  if (window.isTvMode) makeTvFocusable(burger);
+
+  burger.addEventListener('click', () => {
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  });
+  document.addEventListener('click', e => {
+    if (!burger.contains(e.target) && !menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
+  const rescanItem = document.getElementById('rescan-menu-item');
+  const rescanLink = document.getElementById('rescan-library');
+  if (isAdminUser()) {
+    rescanItem.style.display = 'block';
+    if (window.isTvMode) makeTvFocusable(rescanLink);
+    rescanLink.addEventListener('click', async e => {
+      e.preventDefault();
+      menu.style.display = 'none';
+      const token = localStorage.getItem('token');
+      const ok = await triggerRescan(token);
+      if (!ok) {
+        alert('No se pudo iniciar la actualización de la biblioteca.');
+        return;
+      }
+      libraryData.scanning = true;
+      renderScanStatus();
+      pollRescan();
+    });
+  }
+}
+
+function initFilters() {
+  let searchDebounce = null;
+  document.getElementById('library-search').addEventListener('input', e => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      setViewState({ q: e.target.value });
+      renderLibraryView();
+    }, 300);
+  });
+
+  document.querySelectorAll('.chip-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setViewState({ tag: btn.dataset.tag });
+      renderLibraryView();
+    });
+  });
+
+  document.getElementById('library-collection-filter').addEventListener('change', e => {
+    setViewState({ collection: e.target.value });
+    renderLibraryView();
+  });
+}
+
+window.addEventListener('popstate', renderLibraryView);
+
+document.addEventListener('DOMContentLoaded', () => {
+  initMenu();
+  initFilters();
+  renderLibrary();
+});

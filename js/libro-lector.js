@@ -127,10 +127,10 @@ async function pushProgressToServer(locator, percent) {
     const token = localStorage.getItem("token");
     if (!token) return false;
     try {
-        const res = await fetch(`${back}/books/${encodeURIComponent(bookId)}/progress`, {
+        const res = await fetch(`${back}/books/progress`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token, locator, percent: percent ?? null }),
+            body: JSON.stringify({ token, id: bookId, locator, percent: percent ?? null }),
             signal: AbortSignal.timeout(5000)
         });
         return res.ok;
@@ -204,7 +204,7 @@ async function loadBookBytes() {
         return { blob: offline.fileBlob, source: "offline" };
     }
     const token = localStorage.getItem("token");
-    const res = await fetch(`${back}/books/${encodeURIComponent(bookId)}/file?token=${encodeURIComponent(token || "")}`, {
+    const res = await fetch(`${back}/books/file?id=${encodeURIComponent(bookId)}&token=${encodeURIComponent(token || "")}`, {
         signal: AbortSignal.timeout(20000)
     });
     if (!res.ok) throw new Error("No se pudo descargar el libro");
@@ -577,7 +577,7 @@ function setupDownloadButton(title, alreadyFetchedBlob) {
             let blob = alreadyFetchedBlob;
             if (!blob) {
                 const token = localStorage.getItem("token");
-                const res = await fetch(`${back}/books/${encodeURIComponent(bookId)}/file?token=${encodeURIComponent(token || "")}`);
+                const res = await fetch(`${back}/books/file?id=${encodeURIComponent(bookId)}&token=${encodeURIComponent(token || "")}`);
                 if (!res.ok) throw new Error("No se pudo descargar el libro");
                 blob = await res.blob();
             }

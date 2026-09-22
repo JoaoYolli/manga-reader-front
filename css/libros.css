@@ -1,9 +1,11 @@
-/* libros.css — biblioteca de libros electrónicos. Reutiliza .manga-card de
-   index.css para las tarjetas; aquí solo lo específico de los libros. */
+/* libros.css — biblioteca de libros electrónicos, organizada en colecciones
+   anidadas. Reutiliza .manga-card de index.css para las tarjetas; aquí solo
+   lo específico de los libros/colecciones. */
 
-/* Secciones "En progreso" / "Sin leer" / "Terminados" — cada una con su
-   propia rejilla en vez de reutilizar #favorites (que en index.css ya es un
-   grid en sí mismo, pensado para una sola lista plana de tarjetas). */
+/* .book-section ahora solo la usa el estante fijo "Lecturas en curso" (ver
+   libros.js) — las antiguas secciones "Sin leer"/"Terminados" desaparecieron,
+   sustituidas por la etiqueta de estado sobre cada tarjeta (ver
+   .book-status-badge) y el filtro correspondiente. */
 .book-section {
   width: 100%;
   margin-bottom: calc(var(--gap) * 1.5);
@@ -215,3 +217,145 @@
   flex: none;
   white-space: nowrap;
 }
+
+/* ─── Etiqueta de estado sobre cada libro ──────────────────────────────
+   Sustituye a las antiguas secciones "Sin leer"/"En progreso"/"Terminado":
+   ahora es una tira de color justo debajo de la portada, dentro del flujo
+   normal de la tarjeta (evita depender de medir la altura real de la imagen
+   para superponerla con position:absolute). */
+.book-status-badge {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25em 0.4em;
+  color: #fff;
+}
+.book-status-badge.status-unread { background: var(--color-ink-soft); }
+.book-status-badge.status-in-progress { background: var(--color-accent); }
+.book-status-badge.status-finished { background: var(--color-success); }
+
+/* ─── Líneas de metadatos de la biblioteca (total descargado, estado del
+   último escaneo) ───────────────────────────────────────────────────── */
+.library-meta-line {
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ─── Filtros: nombre, etiqueta de estado, colección ───────────────────── */
+#library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  margin: var(--gap) 0;
+}
+
+#library-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 0.55em 0.8em;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+}
+#library-search:focus { outline: none; border-color: var(--color-accent); }
+
+.chip-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip-filter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.35em 0.7em;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 999px;
+  box-shadow: none;
+  color: var(--color-ink-soft);
+}
+.chip-filter:hover { color: var(--color-accent); border-color: var(--color-accent); }
+.chip-filter.active { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.chip-filter:active { transform: none; box-shadow: none; }
+
+#library-collection-filter {
+  padding: 0.5em 0.7em;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  color: var(--color-ink);
+}
+
+/* ─── Breadcrumb de navegación por colecciones ─────────────────────────── */
+#library-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0 var(--gap);
+  font-size: 0.82rem;
+  color: var(--color-ink-soft);
+}
+#library-breadcrumb button {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#library-breadcrumb button:hover { color: var(--color-accent); }
+#library-breadcrumb button:active { transform: none; box-shadow: none; }
+#library-breadcrumb .breadcrumb-current { color: var(--color-ink); font-weight: 700; }
+#library-breadcrumb .breadcrumb-sep { color: var(--color-border-strong); }
+
+/* ─── Tarjeta de colección ──────────────────────────────────────────────
+   Borde de acento a la izquierda para distinguirla de un libro a simple
+   vista; el contador "N libros" (en vez del formato/tamaño de un libro) ya
+   deja claro que es una carpeta, sin necesitar un icono aparte. */
+.collection-card {
+  border-left: 3px solid var(--color-accent);
+}
+
+.collection-download-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--stamp-shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.collection-download-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.collection-download-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--color-border-strong); }
